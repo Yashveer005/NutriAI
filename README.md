@@ -139,7 +139,9 @@ NutriAI uses **IBM watsonx.ai** to generate AI-powered nutrition responses.
 meta-llama/llama-3-3-70b-instruct
 
 
-🔄 Application Flow
+
+###🔄 Application Flow
+
 User
   │
   ▼
@@ -161,6 +163,7 @@ NutriAI Web Interface
           │
           ▼
       NutriAI Interface
+
 
 
 🛠️ Tech Stack
