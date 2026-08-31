@@ -946,3 +946,115 @@ body.dark-mode .tech-stack span {
     }
 
 }
+/* About Section */
+
+.about-section {
+    padding: 20px 0 40px;
+}
+
+.about-card {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 35px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.about-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9f7ef;
+    border-radius: 16px;
+    font-size: 30px;
+}
+
+.about-card h2 {
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.about-card > p {
+    max-width: 700px;
+    margin: 0 auto;
+    color: #667085;
+    line-height: 1.6;
+}
+
+.about-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-top: 30px;
+    text-align: left;
+}
+
+.about-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    background: #f8fbf9;
+    border: 1px solid #e5eee8;
+    border-radius: 14px;
+}
+
+.about-item > span {
+    font-size: 24px;
+}
+
+.about-item strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.about-item p {
+    margin: 0;
+    color: #667085;
+    font-size: 13px;
+}
+
+.creator {
+    margin-top: 30px;
+    padding-top: 25px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.creator h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.creator h4 {
+    font-size: 22px;
+    margin-bottom: 5px;
+}
+
+.creator > p {
+    color: #667085;
+    font-size: 14px;
+}
+
+.creator-description {
+    max-width: 650px;
+    margin: 12px auto 0;
+    line-height: 1.6;
+}
+
+@media (max-width: 650px) {
+
+    .about-card {
+        padding: 25px 18px;
+    }
+
+    .about-grid {
+        grid-template-columns: 1fr;
+    }
+
+}

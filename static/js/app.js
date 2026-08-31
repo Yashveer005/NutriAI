@@ -551,8 +551,7 @@ async function sendMessage() {
                         message:
                             message,
 
-                        profile:
-                            profile
+                        profile: JSON.parse(localStorage.getItem("nutriAIProfile") || "{}")
 
                     })
 
