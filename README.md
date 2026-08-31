@@ -137,11 +137,15 @@ NutriAI uses **IBM watsonx.ai** to generate AI-powered nutrition responses.
 
 ```text
 meta-llama/llama-3-3-70b-instruct
+```
 
+The Flask backend sends user questions and profile information to the AI model and returns the generated response.
 
+---
 
-###🔄 Application Flow
+## 🔄 Application Flow
 
+```text
 User
   │
   ▼
@@ -163,32 +167,43 @@ NutriAI Web Interface
           │
           ▼
       NutriAI Interface
+```
 
+---
 
+## 🛠️ Tech Stack
 
-🛠️ Tech Stack
+### Frontend
 
-Frontend
-HTML5
-CSS3
-JavaScript
-LocalStorage
-Responsive Web Design
-Backend
-Python
-Flask
-REST API
-AI
-IBM watsonx.ai
-IBM Cloud
-Meta Llama 3.3 70B Instruct
-Deployment
-GitHub
-Render
-Gunicorn
+- HTML5
+- CSS3
+- JavaScript
+- LocalStorage
+- Responsive Web Design
 
-📁 Project Structure
+### Backend
 
+- Python
+- Flask
+- REST API
+
+### AI
+
+- IBM watsonx.ai
+- IBM Cloud
+- Meta Llama 3.3 70B Instruct
+
+### Deployment
+
+- GitHub
+- Render
+- Gunicorn
+
+---
+
+## 📁 Project Structure
+
+```text
 NutriAI/
 │
 ├── app.py
@@ -207,72 +222,129 @@ NutriAI/
     │
     └── js/
         └── app.js
+```
 
-⚙️ Local Installation
-1. Clone the Repository
+---
+
+## ⚙️ Local Installation
+
+### 1. Clone the Repository
+
+```bash
 git clone https://github.com/Yashveer005/NutriAI.git
-2. Open the Project
+```
+
+### 2. Open the Project
+
+```bash
 cd NutriAI
-3. Create a Virtual Environment
-Windows
+```
+
+### 3. Create a Virtual Environment
+
+#### Windows
+
+```powershell
 python -m venv venv
-macOS / Linux
+```
+
+#### macOS / Linux
+
+```bash
 python3 -m venv venv
-4. Activate the Virtual Environment
-Windows PowerShell
+```
+
+### 4. Activate the Virtual Environment
+
+#### Windows PowerShell
+
+```powershell
 .\venv\Scripts\Activate.ps1
-macOS / Linux
+```
+
+#### macOS / Linux
+
+```bash
 source venv/bin/activate
-5. Install Dependencies
+```
+
+### 5. Install Dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
-🔐 Environment Variables
+---
 
-Create a .env file in the project root:
+## 🔐 Environment Variables
 
+Create a `.env` file in the project root:
+
+```env
 IBM_API_KEY=your_ibm_api_key
 IBM_PROJECT_ID=your_ibm_project_id
 IBM_URL=https://au-syd.ml.cloud.ibm.com
-Important Security Note
+```
 
-Never upload the .env file to GitHub.
+### Important Security Note
 
-The .env file contains sensitive IBM credentials and is excluded using .gitignore.
+Never upload the `.env` file to GitHub.
 
-The repository contains .env.example with placeholder values only.
+The `.env` file contains sensitive IBM credentials and is excluded using `.gitignore`.
 
-▶️ Run Locally
+The repository contains `.env.example` with placeholder values only.
+
+---
+
+## ▶️ Run Locally
 
 Start the Flask application:
 
+```bash
 python app.py
+```
 
 Open the application at:
 
+```text
 http://127.0.0.1:5000
+```
 
-🚀 Deployment
+---
 
-NutriAI is deployed using Render.
+## 🚀 Deployment
 
-Build Command
+NutriAI is deployed using **Render**.
+
+### Build Command
+
+```bash
 pip install -r requirements.txt
-Start Command
+```
+
+### Start Command
+
+```bash
 gunicorn app:app
+```
 
 IBM credentials are configured through Render Environment Variables.
 
-🔒 Security
+---
+
+## 🔒 Security
 
 NutriAI follows basic credential protection practices:
 
-API keys are stored using environment variables.
-.env is excluded from Git.
-.env.example contains placeholder values only.
-API credentials are not hard-coded into the application.
-User profile information is stored locally in the browser.
+- API keys are stored using environment variables.
+- `.env` is excluded from Git.
+- `.env.example` contains placeholder values only.
+- API credentials are not hard-coded into the application.
+- User profile information is stored locally in the browser.
 
-⚠️ Disclaimer
+---
+
+## ⚠️ Disclaimer
 
 NutriAI provides general nutrition information for educational purposes only.
 
@@ -280,19 +352,32 @@ It is not a medical diagnostic tool and does not replace a doctor, registered di
 
 Nutrition requirements can vary between individuals. Users should seek professional medical advice for medical conditions, allergies, medications, or personalized dietary requirements.
 
-👨‍💻 Created By
-Yashveer Singh
+---
 
-MCA Student | Developer | Cybersecurity Enthusiast
+## 👨‍💻 Created By
 
-NutriAI was designed and developed by Yashveer Singh as an AI-powered nutrition assistant using Python, Flask, JavaScript, and IBM watsonx.ai.
+### Yashveer Singh
 
-📄 License
+**MCA Student | Developer | Cybersecurity Enthusiast**
 
-This project is licensed under the MIT License.
+NutriAI was designed and developed by **Yashveer Singh** as an AI-powered nutrition assistant using Python, Flask, JavaScript, and IBM watsonx.ai.
 
-See the LICENSE file for details.
+---
 
-⭐ Support
+## 📄 License
+
+This project is licensed under the **MIT License**.
+
+See the `LICENSE` file for details.
+
+---
+
+## ⭐ Support
 
 If you find NutriAI useful, consider giving the repository a ⭐ on GitHub.
+
+---
+
+## 🥗 NutriAI
+
+### Eat Better. Live Better.
