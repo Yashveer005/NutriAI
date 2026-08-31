@@ -162,7 +162,8 @@ NutriAI Web Interface
           ▼
       NutriAI Interface
 
-      🛠️ Tech Stack
+🛠️ Tech Stack
+
 Frontend
 HTML5
 CSS3
@@ -181,7 +182,9 @@ Deployment
 GitHub
 Render
 Gunicorn
+
 📁 Project Structure
+
 NutriAI/
 │
 ├── app.py
@@ -200,6 +203,7 @@ NutriAI/
     │
     └── js/
         └── app.js
+
 ⚙️ Local Installation
 1. Clone the Repository
 git clone https://github.com/Yashveer005/NutriAI.git
@@ -217,6 +221,7 @@ macOS / Linux
 source venv/bin/activate
 5. Install Dependencies
 pip install -r requirements.txt
+
 🔐 Environment Variables
 
 Create a .env file in the project root:
@@ -241,6 +246,7 @@ python app.py
 Open the application at:
 
 http://127.0.0.1:5000
+
 🚀 Deployment
 
 NutriAI is deployed using Render.
@@ -261,6 +267,7 @@ API keys are stored using environment variables.
 .env.example contains placeholder values only.
 API credentials are not hard-coded into the application.
 User profile information is stored locally in the browser.
+
 ⚠️ Disclaimer
 
 NutriAI provides general nutrition information for educational purposes only.
