@@ -162,6 +162,7 @@ NutriAI Web Interface
           ▼
       NutriAI Interface
 
+
 🛠️ Tech Stack
 
 Frontend
