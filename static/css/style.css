@@ -623,3 +623,161 @@ body.dark-mode .icon-lilac { background: #332d49; color: #c2b4f4; }
 /* Guard against accidental horizontal overflow */
 img, svg, video, canvas, iframe { max-width: 100%; }
 pre, code { max-width: 100%; overflow-wrap: anywhere; }
+
+
+
+/* =========================================================
+   NutriAI — Mobile and accessibility fixes
+   Add this at the END of style.css
+   ========================================================= */
+
+/* Hide labels visually while keeping them accessible */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Keep layout dimensions predictable */
+.app-shell,
+main,
+.content-section,
+.chat-layout,
+.chat-card,
+.chat-composer {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Keep the chat input and send button aligned */
+.chat-composer {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.chat-composer textarea {
+    display: block;
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+    max-width: 100%;
+    resize: vertical;
+    overflow-wrap: anywhere;
+}
+
+.chat-composer .send-button {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+}
+
+/* Mobile navigation: one horizontally scrollable row */
+@media (max-width: 600px) {
+    .main-nav {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .main-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-link {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .hero-section {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .chat-layout,
+    .profile-layout,
+    .calculator-grid,
+    .planner-grid,
+    .about-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .chat-sidebar {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .chat-composer {
+        width: auto;
+        margin-right: 8px;
+        margin-left: 8px;
+    }
+
+    .chat-composer textarea {
+        font-size: 16px;
+    }
+
+    .info-banner {
+        flex-wrap: wrap;
+    }
+
+    .info-banner > .text-button {
+        max-width: 100%;
+        white-space: normal;
+    }
+}
+
+/* Extra-small phones */
+@media (max-width: 360px) {
+    .app-shell {
+        width: calc(100% - 20px);
+    }
+
+    .brand-copy small {
+        max-width: 145px;
+    }
+
+    .hero-section {
+        padding: 22px 14px;
+    }
+
+    .hero-copy h1 {
+        font-size: clamp(29px, 9vw, 34px);
+        letter-spacing: -1px;
+    }
+
+    .chat-card-header {
+        gap: 8px;
+    }
+
+    .powered-label {
+        display: none;
+    }
+
+    .chat-composer {
+        gap: 6px;
+        padding: 8px;
+    }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
