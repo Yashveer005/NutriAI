@@ -789,3 +789,17 @@ messageInput?.addEventListener("keydown", event => {
     ) {
         event.preventDefault();
     
+
+
+
+
+window.addEventListener("error", function (event) {
+    alert("JavaScript error: " + event.message);
+});
+
+window.addEventListener("load", function () {
+    alert(
+        "JS loaded. showSection: " +
+        typeof window.showSection
+    );
+});
