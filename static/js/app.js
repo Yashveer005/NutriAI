@@ -2,7 +2,7 @@
 "use strict";
 
 /* =========================================================
-   NutriAI 2.0 — Complete Frontend Application
+   NutriAI 2.0 — Frontend Application
    ========================================================= */
 
 const STORAGE_KEYS = {
@@ -21,12 +21,6 @@ let isSending = false;
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => document.querySelectorAll(selector);
 
-const chatBox = $("#chatBox");
-const messageInput = $("#messageInput");
-const sendButton = $("#sendButton");
-const chatForm = $("#chatForm");
-const themeToggle = $("#themeToggle");
-
 const SECTION_IDS = [
     "chatSection",
     "plannerSection",
@@ -43,10 +37,14 @@ const NAV_MAP = {
     "About": "aboutSection"
 };
 
+const chatBox = $("#chatBox");
+const messageInput = $("#messageInput");
+const sendButton = $("#sendButton");
+const chatForm = $("#chatForm");
+const profileForm = $("#profileForm");
+const themeToggle = $("#themeToggle");
 
-/* =========================================================
-   STORAGE
-   ========================================================= */
+/* STORAGE */
 
 function readStorage(key, fallback = null) {
     try {
@@ -70,7 +68,7 @@ function removeStorage(key) {
     try {
         localStorage.removeItem(key);
     } catch {
-        // Storage may be unavailable in private browsing.
+        // Storage may be unavailable.
     }
 }
 
@@ -88,16 +86,13 @@ function getSavedProfile() {
             return profile;
         }
     } catch {
-        // Start with an empty profile if stored data is invalid.
+        // Use empty profile when saved data is invalid.
     }
 
     return {};
 }
 
-
-/* =========================================================
-   NAVIGATION
-   ========================================================= */
+/* NAVIGATION */
 
 function showSection(sectionName) {
     const aliases = {
@@ -124,22 +119,19 @@ function showSection(sectionName) {
     });
 
     $$(".nav-link").forEach(button => {
-        const isActive =
+        const active =
             NAV_MAP[button.textContent.trim()] === targetId;
 
-        button.classList.toggle("active", isActive);
+        button.classList.toggle("active", active);
 
-        if (isActive) {
+        if (active) {
             button.setAttribute("aria-current", "page");
         } else {
             button.removeAttribute("aria-current");
         }
     });
 
-    window.scrollTo({
-        top: 0,
-        behavior: "auto"
-    });
+    window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 window.showSection = showSection;
@@ -154,26 +146,9 @@ function initializeNavigation() {
             }
         });
     });
-
-    // Ensure the brand link and inline HTML handlers work.
-    $$("[onclick*='showSection']").forEach(element => {
-        element.addEventListener("click", event => {
-            const match = element.getAttribute("onclick")?.match(
-                /showSection\(['"]([^'"]+)['"]\)/
-            );
-
-            if (match) {
-                event.preventDefault();
-                showSection(match[1]);
-            }
-        });
-    });
 }
 
-
-/* =========================================================
-   CHAT MESSAGE RENDERING
-   ========================================================= */
+/* MESSAGE RENDERING */
 
 function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, character => ({
@@ -256,10 +231,7 @@ function renderConversation() {
     });
 }
 
-
-/* =========================================================
-   CHAT HISTORY
-   ========================================================= */
+/* CHAT HISTORY */
 
 function loadChatHistory() {
     try {
@@ -281,7 +253,10 @@ function loadChatHistory() {
             .slice(-MAX_STORED_MESSAGES)
             .map(item => ({
                 role: item.role,
-                content: item.content.slice(0, MAX_MESSAGE_LENGTH)
+                content: item.content.slice(
+                    0,
+                    MAX_MESSAGE_LENGTH
+                )
             }));
     } catch {
         chatHistory = [];
@@ -313,10 +288,7 @@ function clearChat() {
 
 window.clearChat = clearChat;
 
-
-/* =========================================================
-   TYPING INDICATOR
-   ========================================================= */
+/* TYPING INDICATOR */
 
 function showTyping() {
     removeTyping();
@@ -345,17 +317,17 @@ function removeTyping() {
     $("#typingIndicator")?.remove();
 }
 
-
-/* =========================================================
-   PROFILE
-   ========================================================= */
+/* PROFILE */
 
 function setProfileStatus(message, isError = false) {
     const status = $("#profileStatus");
+
     if (!status) return;
 
     status.textContent = message;
-    status.style.color = isError ? "var(--danger, #c0392b)" : "";
+    status.style.color = isError
+        ? "var(--danger, #c0392b)"
+        : "";
 }
 
 function saveProfile() {
@@ -388,7 +360,10 @@ function saveProfile() {
             !Number.isFinite(number) ||
             number < min ||
             number > max ||
-            ((key === "weight" || key === "height") && number <= 0)
+            (
+                (key === "weight" || key === "height") &&
+                number <= 0
+            )
         ) {
             setProfileStatus(errorMessage, true);
             return;
@@ -424,16 +399,16 @@ function loadProfile() {
 
     Object.entries(fields).forEach(([id, key]) => {
         const field = document.getElementById(id);
-        if (field) field.value = profile[key] || "";
+
+        if (field) {
+            field.value = profile[key] || "";
+        }
     });
 }
 
 window.saveProfile = saveProfile;
 
-
-/* =========================================================
-   AI CHAT
-   ========================================================= */
+/* AI CHAT */
 
 async function sendMessage() {
     if (isSending || !messageInput || !sendButton) return;
@@ -446,32 +421,42 @@ async function sendMessage() {
     }
 
     if (message.length > MAX_MESSAGE_LENGTH) {
-        addMessage("Please keep your message under 4,000 characters.", "bot");
+        addMessage(
+            "Please keep your message under 4,000 characters.",
+            "bot"
+        );
         return;
     }
 
     const previousHistory = [...chatHistory];
+
     const historyForRequest = chatHistory
         .slice(-MAX_CONTEXT_MESSAGES)
         .map(item => ({ ...item }));
 
     addMessage(message, "user");
 
-    chatHistory.push({ role: "user", content: message });
+    chatHistory.push({
+        role: "user",
+        content: message
+    });
+
     saveChatHistory();
 
     messageInput.value = "";
     isSending = true;
     sendButton.disabled = true;
     messageInput.disabled = true;
-    sendButton.innerHTML = "…";
+    sendButton.textContent = "…";
 
     showTyping();
 
     try {
         const response = await fetch("/chat", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify({
                 message,
                 profile: getSavedProfile(),
@@ -491,7 +476,8 @@ async function sendMessage() {
 
         if (!response.ok) {
             throw new Error(
-                data?.error || "NutriAI could not process your request."
+                data?.error ||
+                "NutriAI could not process your request."
             );
         }
 
@@ -499,7 +485,9 @@ async function sendMessage() {
             typeof data.response !== "string" ||
             !data.response.trim()
         ) {
-            throw new Error("No answer was returned. Please try again.");
+            throw new Error(
+                "No answer was returned. Please try again."
+            );
         }
 
         const answer = data.response.trim();
@@ -520,7 +508,8 @@ async function sendMessage() {
 
         const messageText = error instanceof TypeError
             ? "Unable to connect to NutriAI. Check your internet connection and try again."
-            : error.message || "Something went wrong. Please try again.";
+            : error.message ||
+              "Something went wrong. Please try again.";
 
         addMessage(messageText, "bot");
 
@@ -530,7 +519,8 @@ async function sendMessage() {
         isSending = false;
         sendButton.disabled = false;
         messageInput.disabled = false;
-        sendButton.innerHTML = '<span aria-hidden="true">↑</span>';
+        sendButton.innerHTML =
+            '<span aria-hidden="true">↑</span>';
 
         messageInput.focus();
     }
@@ -538,10 +528,7 @@ async function sendMessage() {
 
 window.sendMessage = sendMessage;
 
-
-/* =========================================================
-   QUICK PROMPTS AND PLANNER
-   ========================================================= */
+/* QUICK PROMPTS */
 
 function sendQuickMessage(message) {
     if (isSending || !messageInput) return;
@@ -558,21 +545,21 @@ function usePlannerPrompt(prompt) {
 window.sendQuickMessage = sendQuickMessage;
 window.usePlannerPrompt = usePlannerPrompt;
 
-
-/* =========================================================
-   BMI CALCULATOR
-   ========================================================= */
+/* BMI CALCULATOR */
 
 function calculateBMI() {
-    const weight = Number($("#bmiWeight")?.value);
-    const height = Number($("#bmiHeight")?.value);
+    const weightField = $("#bmiWeight");
+    const heightField = $("#bmiHeight");
     const result = $("#bmiResult");
 
     if (!result) return;
 
+    const weight = Number(weightField?.value);
+    const height = Number(heightField?.value);
+
     if (
-        !$("#bmiWeight")?.value ||
-        !$("#bmiHeight")?.value ||
+        !weightField?.value ||
+        !heightField?.value ||
         !Number.isFinite(weight) ||
         !Number.isFinite(height) ||
         weight <= 0 ||
@@ -580,7 +567,8 @@ function calculateBMI() {
         height <= 0 ||
         height > 300
     ) {
-        result.textContent = "Enter a valid weight in kg and height in cm.";
+        result.textContent =
+            "Enter a valid weight in kg and height in cm.";
         return;
     }
 
@@ -599,23 +587,24 @@ function calculateBMI() {
 
 window.calculateBMI = calculateBMI;
 
-
-/* =========================================================
-   DAILY CALORIE ESTIMATE
-   ========================================================= */
+/* DAILY CALORIE ESTIMATE */
 
 function calculateCalories() {
-    const age = Number($("#calorieAge")?.value);
-    const weight = Number($("#calorieWeight")?.value);
-    const height = Number($("#calorieHeight")?.value);
+    const ageField = $("#calorieAge");
+    const weightField = $("#calorieWeight");
+    const heightField = $("#calorieHeight");
     const result = $("#calorieResult");
 
     if (!result) return;
 
+    const age = Number(ageField?.value);
+    const weight = Number(weightField?.value);
+    const height = Number(heightField?.value);
+
     if (
-        !$("#calorieAge")?.value ||
-        !$("#calorieWeight")?.value ||
-        !$("#calorieHeight")?.value ||
+        !ageField?.value ||
+        !weightField?.value ||
+        !heightField?.value ||
         !Number.isFinite(age) ||
         !Number.isFinite(weight) ||
         !Number.isFinite(height) ||
@@ -635,7 +624,9 @@ function calculateCalories() {
     const estimatedBMR =
         (10 * weight) + (6.25 * height) - (5 * age) - 161;
 
-    const estimatedCalories = Math.round(estimatedBMR * 1.45);
+    const estimatedCalories = Math.round(
+        estimatedBMR * 1.45
+    );
 
     result.textContent =
         `Approximate estimate: ${estimatedCalories.toLocaleString()} kcal/day. This simplified estimate is not medical advice.`;
@@ -643,22 +634,28 @@ function calculateCalories() {
 
 window.calculateCalories = calculateCalories;
 
-
-/* =========================================================
-   THEME
-   ========================================================= */
+/* THEME
+   CSS must use body.dark-mode for the dark theme variables.
+*/
 
 function applyTheme(theme) {
-    const isDark = theme === "dark";
+    const normalizedTheme =
+        theme === "dark" ? "dark" : "light";
+
+    const isDark = normalizedTheme === "dark";
 
     document.body.classList.toggle("dark-mode", isDark);
+    document.documentElement.style.colorScheme =
+        normalizedTheme;
 
     if (themeToggle) {
         themeToggle.textContent = isDark ? "☀️" : "🌙";
 
         themeToggle.setAttribute(
             "aria-label",
-            isDark ? "Switch to light mode" : "Switch to dark mode"
+            isDark
+                ? "Switch to light mode"
+                : "Switch to dark mode"
         );
 
         themeToggle.title = isDark
@@ -668,24 +665,33 @@ function applyTheme(theme) {
 }
 
 function loadTheme() {
-    const theme = readStorage(STORAGE_KEYS.theme, "light");
-    applyTheme(theme === "dark" ? "dark" : "light");
+    const savedTheme = readStorage(
+        STORAGE_KEYS.theme,
+        "light"
+    );
+
+    applyTheme(savedTheme);
 }
 
 function toggleTheme() {
-    const isDark = document.body.classList.contains("dark-mode");
+    const isDark =
+        document.body.classList.contains("dark-mode");
+
     const nextTheme = isDark ? "light" : "dark";
 
     applyTheme(nextTheme);
     writeStorage(STORAGE_KEYS.theme, nextTheme);
 }
 
-themeToggle?.addEventListener("click", toggleTheme);
+window.applyTheme = applyTheme;
+window.toggleTheme = toggleTheme;
 
+themeToggle?.addEventListener("click", event => {
+    event.preventDefault();
+    toggleTheme();
+});
 
-/* =========================================================
-   EVENT HANDLERS
-   ========================================================= */
+/* EVENT HANDLERS */
 
 chatForm?.addEventListener("submit", event => {
     event.preventDefault();
@@ -703,10 +709,12 @@ messageInput?.addEventListener("keydown", event => {
     }
 });
 
+profileForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    saveProfile();
+});
 
-/* =========================================================
-   INITIALIZATION
-   ========================================================= */
+/* INITIALIZATION */
 
 function initializeNutriAI() {
     initializeNavigation();
@@ -715,9 +723,8 @@ function initializeNutriAI() {
     loadChatHistory();
     renderConversation();
 
-    // Keep the app usable even if an optional section is missing.
-    const firstAvailableSection = SECTION_IDS.find(id =>
-        document.getElementById(id)
+    const firstAvailableSection = SECTION_IDS.find(
+        id => document.getElementById(id)
     );
 
     if (firstAvailableSection) {
