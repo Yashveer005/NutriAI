@@ -1153,3 +1153,251 @@ p {
 .about-hero > p {
     max-width: 700px;
     margin-bottom:
+
+
+/* =========================================
+   NutriAI — Mobile Responsive Layout Fix
+   Add this at the END of style.css
+========================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+}
+
+body {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    overflow-x: clip;
+}
+
+.app-shell,
+main {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.chat-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 265px !important;
+    align-items: start;
+    gap: 20px;
+    width: 100%;
+    min-width: 0;
+}
+
+.chat-card,
+.chat-sidebar,
+.chat-box,
+.chat-composer,
+.chat-card-header,
+.message,
+.message-content {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.chat-card {
+    width: 100%;
+}
+
+.chat-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.message-content {
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.message-content p {
+    max-width: 100%;
+}
+
+.chat-composer textarea {
+    width: 100%;
+    min-width: 0;
+    resize: vertical;
+    overflow-wrap: anywhere;
+}
+
+img,
+input,
+select,
+textarea,
+button {
+    max-width: 100%;
+}
+
+.hero-section,
+.section-heading,
+.profile-layout,
+.calculator-grid,
+.planner-grid {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Tablet and mobile */
+@media screen and (max-width: 900px) {
+    .app-shell {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .chat-layout {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 20px;
+    }
+
+    .chat-card {
+        grid-column: 1 / -1;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .chat-sidebar {
+        grid-column: 1 / -1;
+        width: 100% !important;
+        min-width: 0 !important;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+
+    .side-card,
+    .disclaimer-card {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .hero-section {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hero-copy,
+    .hero-visual {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .calculator-grid,
+    .planner-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .section-heading {
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+}
+
+/* Small phones */
+@media screen and (max-width: 480px) {
+    .app-shell {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .site-header {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .brand-copy small {
+        white-space: normal;
+    }
+
+    .main-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        max-width: 100%;
+    }
+
+    .nav-link {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    .hero-section {
+        padding: 24px 16px;
+    }
+
+    .section-heading h2 {
+        font-size: clamp(24px, 7vw, 32px);
+    }
+
+    .chat-card-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .powered-label {
+        margin-left: auto;
+    }
+
+    .chat-box {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .message {
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .message-avatar {
+        flex-shrink: 0;
+    }
+
+    .message-content {
+        flex: 1;
+        width: 0;
+    }
+
+    .chat-composer {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .chat-composer textarea {
+        flex: 1;
+        font-size: 16px;
+    }
+
+    .send-button {
+        flex-shrink: 0;
+    }
+
+    .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .form-field,
+    .form-field-full {
+        grid-column: 1 / -1;
+        min-width: 0;
+    }
+
+    .primary-button,
+    .secondary-button {
+        white-space: normal;
+    }
+}
