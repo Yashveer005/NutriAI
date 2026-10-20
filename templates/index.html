@@ -1,862 +1,306 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>NutriAI | Personal AI Nutrition Assistant</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/style.css') }}">
+    <meta name="theme-color" content="#f7faf7">
+    <meta name="description" content="NutriAI helps you explore personalized nutrition ideas, meal planning and basic wellness calculations.">
+    <title>NutriAI — Your Personal Nutrition Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </head>
-
 <body>
-
-<div class="app">
-
-    <!-- ================= HEADER ================= -->
-
-    <header class="header">
-
-        <div class="brand">
-
-            <div class="logo">
-                🥗
-            </div>
-
-            <div>
-                <h1>NutriAI</h1>
-                <p>Personal AI Nutrition Assistant</p>
-            </div>
-
-        </div>
-
-
-        <div class="header-actions">
-
-            <div class="status">
-                <span></span>
-                AI Online
-            </div>
-
-            <button
-                class="theme-btn"
-                id="themeToggle"
-                title="Toggle theme">
-                🌙
-            </button>
-
-        </div>
-
-    </header>
-
-
-    <!-- ================= NAVIGATION ================= -->
-
-    <nav class="nav">
-
-        <button
-            class="nav-btn active"
-            data-section="chat">
-            🤖 AI Chat
-        </button>
-
-        <button
-            class="nav-btn"
-            data-section="planner">
-            🍽️ Diet Planner
-        </button>
-
-        <button
-            class="nav-btn"
-            data-section="calculator">
-            🧮 Calculators
-        </button>
-
-        <button
-            class="nav-btn"
-            data-section="profile">
-            👤 My Profile
-        </button>
-
-        <button
-            class="nav-btn"
-            data-section="about">
-            ℹ️ About
-        </button>
-
-    </nav>
-
-
-    <!-- ================= MAIN ================= -->
-
-    <main class="main">
-
-
-        <!-- ================= CHAT ================= -->
-
-        <section
-            id="chatSection"
-            class="section active">
-
-            <div class="hero">
-
-                <span class="hero-badge">
-                    ✨ Powered by IBM watsonx.ai
+    <div class="app-shell">
+        <header class="site-header">
+            <a class="brand" href="#" onclick="showSection('chatSection'); return false;" aria-label="NutriAI home">
+                <span class="brand-mark">N</span>
+                <span class="brand-copy">
+                    <strong>NutriAI</strong>
+                    <small>Your everyday nutrition companion</small>
                 </span>
-
-                <h2>
-                    Eat Better.<br>
-                    <span>Live Better.</span>
-                </h2>
-
-                <p>
-                    Get personalized nutrition guidance based on your
-                    goals, preferences and lifestyle.
-                </p>
-
-            </div>
-
-
-            <div class="chat-card">
-
-                <div class="chat-header">
-
-                    <div>
-                        <h3>NutriAI Assistant</h3>
-
-                        <p>
-                            Ask me anything about nutrition
-                        </p>
-                    </div>
-
-
-                    <div class="chat-actions">
-
-                        <div class="online-dot"></div>
-
-                        <button
-                            class="clear-chat-btn"
-                            onclick="clearChat()"
-                            title="Clear conversation">
-                            🗑 Clear
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-                <div
-                    id="chatBox"
-                    class="chat-box">
-
-                    <div class="message bot">
-
-                        <div class="avatar">
-                            🥗
-                        </div>
-
-                        <div class="bubble">
-
-                            <strong>
-                                NutriAI
-                            </strong>
-
-                            <p>
-                                Hello! 👋 I'm NutriAI, your personal
-                                AI nutrition assistant.
-                            </p>
-
-                            <p>
-                                Tell me your goal or ask me a nutrition
-                                question and I'll help you get started.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- QUICK PROMPTS -->
-
-                <div class="quick-prompts">
-
-                    <button
-                        onclick="sendQuickMessage(
-                        'Give me a one day vegetarian diet plan')">
-
-                        🥗 1-Day Plan
-
-                    </button>
-
-
-                    <button
-                        onclick="sendQuickMessage(
-                        'Give me a healthy weight loss diet plan')">
-
-                        ⚖️ Weight Loss
-
-                    </button>
-
-
-                    <button
-                        onclick="sendQuickMessage(
-                        'Give me a healthy weight gain diet plan')">
-
-                        💪 Weight Gain
-
-                    </button>
-
-
-                    <button
-                        onclick="sendQuickMessage(
-                        'Give me high protein vegetarian food options')">
-
-                        🥩 High Protein
-
-                    </button>
-
-                </div>
-
-
-                <!-- INPUT -->
-
-                <div class="input-area">
-
-                    <input
-                        type="text"
-                        id="messageInput"
-                        placeholder="Ask NutriAI a nutrition question..."
-                        autocomplete="off">
-
-
-                    <button
-                        id="sendButton"
-                        onclick="sendMessage()">
-
-                        Send ➤
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= DIET PLANNER ================= -->
-
-        <section
-            id="plannerSection"
-            class="section">
-
-            <div class="section-title">
-
-                <span>🍽️</span>
-
-                <div>
-
-                    <h2>
-                        Diet Planner
-                    </h2>
-
-                    <p>
-                        Create a personalized diet plan with NutriAI.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="feature-grid">
-
-
-                <div
-                    class="feature-card"
-                    onclick="usePlannerPrompt(
-                    'Create a one day vegetarian diet plan for weight loss')">
-
-                    <div class="feature-icon">
-                        🥗
-                    </div>
-
-                    <h3>
-                        Weight Loss Plan
-                    </h3>
-
-                    <p>
-                        Get a balanced diet plan focused on healthy
-                        weight management.
-                    </p>
-
-                    <button>
-                        Create Plan →
-                    </button>
-
-                </div>
-
-
-                <div
-                    class="feature-card"
-                    onclick="usePlannerPrompt(
-                    'Create a one day healthy weight gain diet plan')">
-
-                    <div class="feature-icon">
-                        💪
-                    </div>
-
-                    <h3>
-                        Weight Gain Plan
-                    </h3>
-
-                    <p>
-                        Get nutritious meal suggestions for healthy
-                        weight gain.
-                    </p>
-
-                    <button>
-                        Create Plan →
-                    </button>
-
-                </div>
-
-
-                <div
-                    class="feature-card"
-                    onclick="usePlannerPrompt(
-                    'Create a balanced one day vegetarian diet plan')">
-
-                    <div class="feature-icon">
-                        🥑
-                    </div>
-
-                    <h3>
-                        Balanced Plan
-                    </h3>
-
-                    <p>
-                        Generate a balanced everyday meal plan.
-                    </p>
-
-                    <button>
-                        Create Plan →
-                    </button>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= CALCULATORS ================= -->
-
-        <section
-            id="calculatorSection"
-            class="section">
-
-            <div class="section-title">
-
-                <span>🧮</span>
-
-                <div>
-
-                    <h2>
-                        Nutrition Calculators
-                    </h2>
-
-                    <p>
-                        Calculate basic health and nutrition metrics.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="calculator-grid">
-
-
-                <!-- BMI -->
-
-                <div class="calculator-card">
-
-                    <div class="calculator-icon">
-                        ⚖️
-                    </div>
-
-                    <h3>
-                        BMI Calculator
-                    </h3>
-
-                    <p>
-                        Calculate your Body Mass Index.
-                    </p>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Weight (kg)
-                        </label>
-
-                        <input
-                            type="number"
-                            id="bmiWeight"
-                            placeholder="e.g. 65">
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Height (cm)
-                        </label>
-
-                        <input
-                            type="number"
-                            id="bmiHeight"
-                            placeholder="e.g. 170">
-
-                    </div>
-
-
-                    <button
-                        class="primary-btn"
-                        onclick="calculateBMI()">
-
-                        Calculate BMI
-
-                    </button>
-
-
-                    <div
-                        id="bmiResult"
-                        class="result">
-                    </div>
-
-                </div>
-
-
-                <!-- CALORIES -->
-
-                <div class="calculator-card">
-
-                    <div class="calculator-icon">
-                        🔥
-                    </div>
-
-                    <h3>
-                        Daily Calories
-                    </h3>
-
-                    <p>
-                        Estimate your daily calorie requirement.
-                    </p>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Age
-                        </label>
-
-                        <input
-                            type="number"
-                            id="calorieAge"
-                            placeholder="e.g. 21">
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Weight (kg)
-                        </label>
-
-                        <input
-                            type="number"
-                            id="calorieWeight"
-                            placeholder="e.g. 94">
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Height (cm)
-                        </label>
-
-                        <input
-                            type="number"
-                            id="calorieHeight"
-                            placeholder="e.g. 174">
-
-                    </div>
-
-
-                    <button
-                        class="primary-btn"
-                        onclick="calculateCalories()">
-
-                        Calculate
-
-                    </button>
-
-
-                    <div
-                        id="calorieResult"
-                        class="result">
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ================= PROFILE ================= -->
-
-        <section
-            id="profileSection"
-            class="section">
-
-            <div class="section-title">
-
-                <span>👤</span>
-
-                <div>
-
-                    <h2>
-                        My Nutrition Profile
-                    </h2>
-
-                    <p>
-                        Save your preferences for personalized guidance.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="profile-card">
-
-                <div class="profile-grid">
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Age
-                        </label>
-
-                        <input
-                            type="number"
-                            id="profileAge"
-                            placeholder="Your age">
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Weight (kg)
-                        </label>
-
-                        <input
-                            type="number"
-                            id="profileWeight"
-                            placeholder="Your weight">
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Height (cm)
-                        </label>
-
-                        <input
-                            type="number"
-                            id="profileHeight"
-                            placeholder="Your height">
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Goal
-                        </label>
-
-                        <select
-                            id="goal"
-                            aria-label="Nutrition goal">
-
-                            <option value="">
-                                Select goal
-                            </option>
-
-                            <option value="weight loss">
-                                Weight Loss
-                            </option>
-
-                            <option value="weight gain">
-                                Weight Gain
-                            </option>
-
-                            <option value="maintenance">
-                                Maintain Weight
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Diet Preference
-                        </label>
-
-                        <select
-                            id="diet"
-                            aria-label="Diet preference">
-
-                            <option value="">
-                                Select preference
-                            </option>
-
-                            <option value="vegetarian">
-                                Vegetarian
-                            </option>
-
-                            <option value="non-vegetarian">
-                                Non-Vegetarian
-                            </option>
-
-                            <option value="vegan">
-                                Vegan
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Activity Level
-                        </label>
-
-                        <select
-                            id="activity"
-                            aria-label="Activity level">
-
-                            <option value="">
-                                Select activity
-                            </option>
-
-                            <option value="sedentary">
-                                Sedentary
-                            </option>
-
-                            <option value="light">
-                                Lightly Active
-                            </option>
-
-                            <option value="moderate">
-                                Moderately Active
-                            </option>
-
-                            <option value="active">
-                                Very Active
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <button
-                    class="primary-btn save-profile"
-                    onclick="saveProfile()">
-
-                    💾 Save Profile
-
+            </a>
+
+            <div class="header-actions">
+                <span class="status-indicator">
+                    <span class="status-dot"></span>
+                    AI Assistant
+                </span>
+                <button id="themeToggle" class="icon-button" type="button" aria-label="Switch color theme" title="Switch theme">
+                    <span aria-hidden="true">◐</span>
                 </button>
-
-
-                <p
-                    id="profileStatus"
-                    class="profile-status">
-                </p>
-
             </div>
+        </header>
 
-        </section>
+        <nav class="main-nav" aria-label="Main navigation">
+            <button class="nav-link active" type="button" onclick="showSection('chatSection')">AI Chat</button>
+            <button class="nav-link" type="button" onclick="showSection('plannerSection')">Meal Planner</button>
+            <button class="nav-link" type="button" onclick="showSection('calculatorSection')">Calculators</button>
+            <button class="nav-link" type="button" onclick="showSection('profileSection')">My Profile</button>
+            <button class="nav-link" type="button" onclick="showSection('aboutSection')">About</button>
+        </nav>
 
-
-        <!-- ================= ABOUT ================= -->
-
-        <section
-            id="aboutSection"
-            class="section">
-
-            <div class="section-title">
-
-                <span>ℹ️</span>
-
-                <div>
-
-                    <h2>
-                        About NutriAI
-                    </h2>
-
-                    <p>
-                        AI-powered nutrition assistance.
-                    </p>
-
+        <main>
+            <section class="hero-section">
+                <div class="hero-copy">
+                    <span class="eyebrow"><span class="eyebrow-dot"></span> PERSONALIZED NUTRITION, MADE SIMPLE</span>
+                    <h1>Eat better.<br><span>Feel your best.</span></h1>
+                    <p>Practical nutrition guidance, meal ideas and wellness tools — tailored to your preferences and goals.</p>
+                    <button class="primary-button" type="button" onclick="showSection('chatSection')">
+                        Talk to NutriAI <span aria-hidden="true">→</span>
+                    </button>
+                    <p class="hero-note">AI-powered guidance, built to support healthier everyday choices.</p>
                 </div>
 
-            </div>
-
-
-            <div class="about-grid">
-
-
-                <div class="about-card">
-
-                    <div class="about-icon">
-                        🤖
+                <div class="hero-visual" aria-label="Nutrition essentials">
+                    <div class="visual-orbit orbit-one"></div>
+                    <div class="visual-orbit orbit-two"></div>
+                    <div class="visual-center">
+                        <span class="visual-leaf" aria-hidden="true">✳</span>
+                        <strong>Small steps.</strong>
+                        <strong class="visual-accent">Better habits.</strong>
                     </div>
+                    <div class="floating-note note-top">
+                        <span class="note-icon">✦</span>
+                        <span><strong>Personalized</strong><small>Based on your goals</small></span>
+                    </div>
+                    <div class="floating-note note-bottom">
+                        <span class="note-icon">♡</span>
+                        <span><strong>Everyday wellness</strong><small>One choice at a time</small></span>
+                    </div>
+                </div>
+            </section>
 
-                    <h3>
-                        AI-Powered
-                    </h3>
-
-                    <p>
-                        NutriAI uses IBM watsonx.ai to generate
-                        personalized nutrition guidance based on
-                        user preferences and goals.
-                    </p>
-
+            <section id="chatSection" class="content-section active-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="eyebrow">YOUR NUTRITION ASSISTANT</span>
+                        <h2>Let's talk nutrition.</h2>
+                        <p>Ask a question, explore food choices or get ideas for your next meal.</p>
+                    </div>
+                    <button class="secondary-button" type="button" onclick="clearChat()">Clear chat</button>
                 </div>
 
+                <div class="chat-layout">
+                    <div class="chat-card">
+                        <div class="chat-card-header">
+                            <div class="assistant-avatar">N</div>
+                            <div class="assistant-details">
+                                <strong>NutriAI Assistant</strong>
+                                <span><span class="status-dot"></span> Ready to help</span>
+                            </div>
+                            <span class="powered-label">watsonx.ai</span>
+                        </div>
 
-                <div class="about-card">
+                        <div id="chatBox" class="chat-box" role="log" aria-live="polite" aria-label="Chat conversation">
+                            <div class="message bot-message">
+                                <div class="message-avatar">N</div>
+                                <div class="message-content">
+                                    <p>Hi! I'm NutriAI. 👋</p>
+                                    <p>Tell me about your nutrition goals or ask me a food-related question. You can save your preferences in My Profile to help personalize our conversation.</p>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="about-icon">
-                        🧮
+                        <div class="quick-prompts">
+                            <span class="quick-prompts-label">TRY ASKING</span>
+                            <div class="quick-prompt-list">
+                                <button type="button" class="quick-prompt" onclick="sendQuickMessage('Suggest a balanced Indian breakfast')">🥣 Healthy breakfast</button>
+                                <button type="button" class="quick-prompt" onclick="sendQuickMessage('Suggest affordable vegetarian protein sources')">🌱 Protein ideas</button>
+                                <button type="button" class="quick-prompt" onclick="sendQuickMessage('Give me simple healthy lunch ideas')">🍲 Lunch ideas</button>
+                            </div>
+                        </div>
+
+                        <form id="chatForm" class="chat-composer" onsubmit="event.preventDefault(); sendMessage();">
+                            <label class="sr-only" for="messageInput">Your nutrition question</label>
+                            <textarea id="messageInput" name="message" rows="1" maxlength="4000" placeholder="Ask NutriAI anything about nutrition..." required></textarea>
+                            <button id="sendButton" class="send-button" type="submit" aria-label="Send message">
+                                <span aria-hidden="true">↑</span>
+                            </button>
+                        </form>
+                        <p class="composer-note">NutriAI can make mistakes. Check important dietary or medical advice with a qualified professional.</p>
                     </div>
 
-                    <h3>
-                        Smart Tools
-                    </h3>
+                    <aside class="chat-sidebar">
+                        <div class="side-card">
+                            <span class="side-card-icon">◎</span>
+                            <h3>Make it personal</h3>
+                            <p>Add your goals, dietary preferences and food allergies to give the assistant useful context.</p>
+                            <button type="button" class="text-button" onclick="showSection('profileSection')">Set up profile <span>→</span></button>
+                        </div>
+                        <div class="side-card">
+                            <span class="side-card-icon">✳</span>
+                            <h3>Explore your options</h3>
+                            <p>Start with a meal idea, estimate basic wellness metrics or explore a simple meal plan.</p>
+                            <button type="button" class="text-button" onclick="showSection('plannerSection')">Explore meal plans <span>→</span></button>
+                        </div>
+                        <div class="disclaimer-card">
+                            <strong>Good to know</strong>
+                            <p>This tool provides general wellness information, not a diagnosis or a substitute for professional medical advice.</p>
+                        </div>
+                    </aside>
+                </div>
+            </section>
 
-                    <p>
-                        Includes BMI calculation, calorie estimation,
-                        diet planning and personalized profile support.
-                    </p>
-
+            <section id="plannerSection" class="content-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="eyebrow">MEAL INSPIRATION</span>
+                        <h2>Find your starting point.</h2>
+                        <p>Choose a goal to ask NutriAI for meal ideas. Plans are suggestions, not prescribed diets.</p>
+                    </div>
                 </div>
 
-
-                <div class="about-card creator-card">
-
-                    <div class="creator-avatar">
-                        YS
-                    </div>
-
-                    <h3>
-                        Built by Yashveer Singh
-                    </h3>
-
-                    <p>
-                        MCA Student
-                    </p>
-
-                    <p>
-                        Computer Network & Cybersecurity
-                    </p>
-
-                    <div class="tech-stack">
-
-                        <span>Python</span>
-                        <span>Flask</span>
-                        <span>IBM watsonx.ai</span>
-                        <span>HTML</span>
-                        <span>CSS</span>
-                        <span>JavaScript</span>
-
-                    </div>
-
+                <div class="planner-grid">
+                    <article class="planner-card">
+                        <div class="planner-icon icon-green">↘</div>
+                        <span class="planner-label">GOAL 01</span>
+                        <h3>Weight management</h3>
+                        <p>Explore balanced meals, satisfying foods and sustainable everyday habits.</p>
+                        <button class="secondary-button" type="button" onclick="usePlannerPrompt('Suggest a balanced, sustainable meal plan for weight management using my profile and food preferences.')">Explore plan <span>→</span></button>
+                    </article>
+                    <article class="planner-card">
+                        <div class="planner-icon icon-peach">↗</div>
+                        <span class="planner-label">GOAL 02</span>
+                        <h3>Healthy weight gain</h3>
+                        <p>Explore nourishing meals and calorie-dense food options that fit your preferences.</p>
+                        <button class="secondary-button" type="button" onclick="usePlannerPrompt('Suggest balanced meal ideas to support healthy weight gain, considering my profile and food preferences.')">Explore plan <span>→</span></button>
+                    </article>
+                    <article class="planner-card">
+                        <div class="planner-icon icon-lilac">✳</div>
+                        <span class="planner-label">GOAL 03</span>
+                        <h3>Balanced eating</h3>
+                        <p>Build a flexible routine around variety, practical meals and everyday nutrition.</p>
+                        <button class="secondary-button" type="button" onclick="usePlannerPrompt('Suggest a practical balanced daily meal plan based on my profile, diet preference and food dislikes.')">Explore plan <span>→</span></button>
+                    </article>
                 </div>
 
-            </div>
+                <div class="info-banner">
+                    <span class="info-banner-icon">ⓘ</span>
+                    <div><strong>Personalize your suggestions</strong><p>Save your dietary preferences, allergies and dislikes in My Profile before requesting a plan.</p></div>
+                    <button class="text-button" type="button" onclick="showSection('profileSection')">My Profile →</button>
+                </div>
+            </section>
 
+            <section id="calculatorSection" class="content-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="eyebrow">QUICK WELLNESS TOOLS</span>
+                        <h2>Know your numbers.</h2>
+                        <p>Explore basic estimates for general awareness. These tools do not provide a medical assessment.</p>
+                    </div>
+                </div>
 
-            <div class="about-note">
+                <div class="calculator-grid">
+                    <article class="calculator-card">
+                        <div class="calculator-heading">
+                            <div class="calculator-icon">↗</div>
+                            <div><h3>BMI calculator</h3><p>Body Mass Index estimate</p></div>
+                        </div>
+                        <label for="bmiWeight">Weight <span>(kg)</span></label>
+                        <input id="bmiWeight" type="number" min="1" max="500" step="0.1" placeholder="e.g. 70">
+                        <label for="bmiHeight">Height <span>(cm)</span></label>
+                        <input id="bmiHeight" type="number" min="1" max="300" step="0.1" placeholder="e.g. 170">
+                        <button class="primary-button full-button" type="button" onclick="calculateBMI()">Calculate BMI</button>
+                        <div id="bmiResult" class="calculator-result" aria-live="polite">Your result will appear here.</div>
+                        <p class="tool-note">BMI is a screening measure, not a complete picture of health. Adult categories do not apply to children.</p>
+                    </article>
 
-                <strong>
-                    ⚠️ Disclaimer
-                </strong>
+                    <article class="calculator-card">
+                        <div class="calculator-heading">
+                            <div class="calculator-icon calorie-icon">✳</div>
+                            <div><h3>Daily calorie estimate</h3><p>A rough energy-needs estimate</p></div>
+                        </div>
+                        <label for="calorieAge">Age <span>(years)</span></label>
+                        <input id="calorieAge" type="number" min="18" max="100" placeholder="e.g. 24">
+                        <label for="calorieWeight">Weight <span>(kg)</span></label>
+                        <input id="calorieWeight" type="number" min="1" max="500" step="0.1" placeholder="e.g. 70">
+                        <label for="calorieHeight">Height <span>(cm)</span></label>
+                        <input id="calorieHeight" type="number" min="1" max="300" step="0.1" placeholder="e.g. 170">
+                        <button class="primary-button full-button" type="button" onclick="calculateCalories()">Estimate calories</button>
+                        <div id="calorieResult" class="calculator-result" aria-live="polite">Your estimate will appear here.</div>
+                        <p class="tool-note">This simplified estimate is not a prescription. Individual needs vary with health, activity and other factors.</p>
+                    </article>
+                </div>
+            </section>
 
-                <p>
-                    NutriAI provides general nutrition information
-                    for educational purposes. It does not diagnose
-                    medical conditions or replace advice from a
-                    qualified healthcare professional.
-                </p>
+            <section id="profileSection" class="content-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="eyebrow">YOUR PREFERENCES</span>
+                        <h2>Make NutriAI yours.</h2>
+                        <p>Share optional details to help the assistant tailor its suggestions. Your profile is saved in this browser.</p>
+                    </div>
+                </div>
 
-            </div>
+                <div class="profile-layout">
+                    <form id="profileForm" class="profile-card" onsubmit="event.preventDefault(); saveProfile();">
+                        <div class="form-section-heading"><span>01</span><div><h3>About you</h3><p>Basic information for general context.</p></div></div>
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="profileAge">Age <span>(years)</span></label>
+                                <input id="profileAge" type="number" min="1" max="120" placeholder="Your age">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileWeight">Weight <span>(kg)</span></label>
+                                <input id="profileWeight" type="number" min="1" max="500" step="0.1" placeholder="Your weight">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileHeight">Height <span>(cm)</span></label>
+                                <input id="profileHeight" type="number" min="1" max="300" step="0.1" placeholder="Your height">
+                            </div>
+                            <div class="form-field">
+                                <label for="profileActivity">Activity level</label>
+                                <select id="profileActivity">
+                                    <option value="">Choose activity level</option>
+                                    <option value="sedentary">Mostly sitting</option>
+                                    <option value="light">Lightly active</option>
+                                    <option value="moderate">Moderately active</option>
+                                    <option value="active">Very active</option>
+                                </select>
+                            </div>
+                        </div>
 
-        </section>
+                        <div class="form-section-heading"><span>02</span><div><h3>Your nutrition preferences</h3><p>Help guide meal ideas to suit your routine.</p></div></div>
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="profileGoal">Primary goal</label>
+                                <select id="profileGoal">
+                                    <option value="">Choose a goal</option>
+                                    <option value="weight loss">Weight management</option>
+                                    <option value="weight gain">Healthy weight gain</option>
+                                    <option value="maintenance">Maintain current weight</option>
+                                    <option value="balanced diet">Balanced eating</option>
+                                    <option value="general wellness">General wellness</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label for="profileDiet">Diet preference</label>
+                                <select id="profileDiet">
+                                    <option value="">Choose diet preference</option>
+                                    <option value="vegetarian">Vegetarian</option>
+                                    <option value="vegan">Vegan</option>
+                                    <option value="eggetarian">Eggetarian</option>
+                                    <option value="non-vegetarian">Non-vegetarian</option>
+                                    <option value="no preference">No specific preference</option>
+                                </select>
+                            </div>
+                            <div class="form-field form-field-full">
+                                <label for="profileAllergies">Food allergies or restrictions</label>
+                                <input id="profileAllergies" type="text" maxlength="500" placeholder="e.g. peanuts, lactose, or none">
+                                <small>List known allergies clearly. AI suggestions cannot guarantee allergen safety.</small>
+                            </div>
+                            <div class="form-field form-field-full">
+                                <label for="profileDislikes">Foods you avoid or dislike</label>
+                                <input id="profileDislikes" type="text" maxlength="500" placeholder="e.g. mushrooms, very spicy food">
+                            </div>
+                        </div>
 
-    </main>
+                        <div class="profile-actions">
+                            <button class="primary-button" type="submit">Save preferences <span>→</span></button>
+                            <span id="profileStatus" class="profile-status" aria-live="polite"></span>
+                        </div>
+                    </form>
 
-
-    <!-- ================= FOOTER ================= -->
-
-    <footer>
-
-        <strong>
-            NutriAI
-        </strong>
-
-        <p>
-            Built by Yashveer Singh • Powered by IBM watsonx.ai
-        </p>
-
-        <small>
-            General nutrition guidance only. Consult a qualified
-            healthcare professional for medical advice.
-        </small>
-
-    </footer>
-
-</div>
-
-
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
-
-</body>
-</html>
+                    <aside class="profile-aside">
+                        <div class="side-card prof
