@@ -93,6 +93,8 @@ function getSavedProfile() {
    NAVIGATION
    ========================================================= */
 
+/* Navigation compatible with the current HTML */
+
 function showSection(sectionName) {
     const aliases = {
         chat: "chatSection",
@@ -103,53 +105,49 @@ function showSection(sectionName) {
     };
 
     const targetId = aliases[sectionName] || sectionName;
-    const target = sections[targetId];
+    const target = document.getElementById(targetId);
 
     if (!target) {
-        console.warn("NutriAI: Unknown section:", sectionName);
+        console.error("NutriAI: Section not found:", targetId);
         return;
     }
 
-    Object.entries(sections).forEach(([id, section]) => {
-        if (!section) return;
-
-        const isActive = id === targetId;
-
-        section.classList.toggle("active-section", isActive);
-        section.classList.toggle("active", isActive);
+    document.querySelectorAll(".content-section").forEach(section => {
+        section.classList.toggle("active-section", section.id === targetId);
     });
 
-    navButtons.forEach(button => {
-        const label = button.textContent.trim().toLowerCase();
-
-        const navTargets = {
-            "ai chat": "chatSection",
-            "meal planner": "plannerSection",
-            "calculators": "calculatorSection",
-            "my profile": "profileSection",
-            "about": "aboutSection"
+    document.querySelectorAll(".nav-link").forEach(button => {
+        const map = {
+            "AI Chat": "chatSection",
+            "Meal Planner": "plannerSection",
+            "Calculators": "calculatorSection",
+            "My Profile": "profileSection",
+            "About": "aboutSection"
         };
 
-        const isActive = navTargets[label] === targetId;
-
-        button.classList.toggle("active", isActive);
-
-        if (isActive) {
-            button.setAttribute("aria-current", "page");
-        } else {
-            button.removeAttribute("aria-current");
-        }
+        const active = map[button.textContent.trim()] === targetId;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-current", active ? "page" : "false");
     });
 
-    window.scrollTo({
-        top: 0,
-        behavior: window.matchMedia(
-            "(prefers-reduced-motion: reduce)"
-        ).matches ? "auto" : "smooth"
-    });
+    window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 window.showSection = showSection;
+
+document.querySelectorAll(".nav-link").forEach(button => {
+    button.addEventListener("click", () => {
+        const map = {
+            "AI Chat": "chatSection",
+            "Meal Planner": "plannerSection",
+            "Calculators": "calculatorSection",
+            "My Profile": "profileSection",
+            "About": "aboutSection"
+        };
+
+        showSection(map[button.textContent.trim()]);
+    });
+});
 
 
 /* =========================================================
