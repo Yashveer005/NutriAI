@@ -3,7 +3,6 @@
 
 /* =========================================================
    NutriAI 2.0 — Complete Frontend Application
-   Compatible with the current index.html and style.css
    ========================================================= */
 
 const STORAGE_KEYS = {
@@ -19,33 +18,41 @@ const MAX_MESSAGE_LENGTH = 4000;
 let chatHistory = [];
 let isSending = false;
 
-const chatBox = document.getElementById("chatBox");
-const messageInput = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
-const themeToggle = document.getElementById("themeToggle");
-const chatForm = document.getElementById("chatForm");
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => document.querySelectorAll(selector);
 
-const navButtons = document.querySelectorAll(".nav-link");
+const chatBox = $("#chatBox");
+const messageInput = $("#messageInput");
+const sendButton = $("#sendButton");
+const chatForm = $("#chatForm");
+const themeToggle = $("#themeToggle");
 
-const sections = {
-    chatSection: document.getElementById("chatSection"),
-    plannerSection: document.getElementById("plannerSection"),
-    calculatorSection: document.getElementById("calculatorSection"),
-    profileSection: document.getElementById("profileSection"),
-    aboutSection: document.getElementById("aboutSection")
+const SECTION_IDS = [
+    "chatSection",
+    "plannerSection",
+    "calculatorSection",
+    "profileSection",
+    "aboutSection"
+];
+
+const NAV_MAP = {
+    "AI Chat": "chatSection",
+    "Meal Planner": "plannerSection",
+    "Calculators": "calculatorSection",
+    "My Profile": "profileSection",
+    "About": "aboutSection"
 };
 
 
 /* =========================================================
-   SAFE LOCAL STORAGE
+   STORAGE
    ========================================================= */
 
 function readStorage(key, fallback = null) {
     try {
         const value = localStorage.getItem(key);
         return value === null ? fallback : value;
-    } catch (error) {
-        console.warn("NutriAI: Browser storage is unavailable.");
+    } catch {
         return fallback;
     }
 }
@@ -54,8 +61,7 @@ function writeStorage(key, value) {
     try {
         localStorage.setItem(key, value);
         return true;
-    } catch (error) {
-        console.warn("NutriAI: Could not save browser data.");
+    } catch {
         return false;
     }
 }
@@ -63,8 +69,8 @@ function writeStorage(key, value) {
 function removeStorage(key) {
     try {
         localStorage.removeItem(key);
-    } catch (error) {
-        console.warn("NutriAI: Could not remove browser data.");
+    } catch {
+        // Storage may be unavailable in private browsing.
     }
 }
 
@@ -81,8 +87,8 @@ function getSavedProfile() {
         ) {
             return profile;
         }
-    } catch (error) {
-        console.warn("NutriAI: Saved profile could not be read.");
+    } catch {
+        // Start with an empty profile if stored data is invalid.
     }
 
     return {};
@@ -92,8 +98,6 @@ function getSavedProfile() {
 /* =========================================================
    NAVIGATION
    ========================================================= */
-
-/* Navigation compatible with the current HTML */
 
 function showSection(sectionName) {
     const aliases = {
@@ -107,51 +111,68 @@ function showSection(sectionName) {
     const targetId = aliases[sectionName] || sectionName;
     const target = document.getElementById(targetId);
 
-    if (!target) {
-        console.error("NutriAI: Section not found:", targetId);
+    if (!target || !target.classList.contains("content-section")) {
+        console.warn("NutriAI: Section not found:", targetId);
         return;
     }
 
-    document.querySelectorAll(".content-section").forEach(section => {
-        section.classList.toggle("active-section", section.id === targetId);
+    $$(".content-section").forEach(section => {
+        section.classList.toggle(
+            "active-section",
+            section.id === targetId
+        );
     });
 
-    document.querySelectorAll(".nav-link").forEach(button => {
-        const map = {
-            "AI Chat": "chatSection",
-            "Meal Planner": "plannerSection",
-            "Calculators": "calculatorSection",
-            "My Profile": "profileSection",
-            "About": "aboutSection"
-        };
+    $$(".nav-link").forEach(button => {
+        const isActive =
+            NAV_MAP[button.textContent.trim()] === targetId;
 
-        const active = map[button.textContent.trim()] === targetId;
-        button.classList.toggle("active", active);
-        button.setAttribute("aria-current", active ? "page" : "false");
+        button.classList.toggle("active", isActive);
+
+        if (isActive) {
+            button.setAttribute("aria-current", "page");
+        } else {
+            button.removeAttribute("aria-current");
+        }
     });
 
-    window.scrollTo({ top: 0, behavior: "auto" });
+    window.scrollTo({
+        top: 0,
+        behavior: "auto"
+    });
 }
 
 window.showSection = showSection;
 
-document.querySelectorAll(".nav-link").forEach(button => {
-    button.addEventListener("click", () => {
-        const map = {
-            "AI Chat": "chatSection",
-            "Meal Planner": "plannerSection",
-            "Calculators": "calculatorSection",
-            "My Profile": "profileSection",
-            "About": "aboutSection"
-        };
+function initializeNavigation() {
+    $$(".nav-link").forEach(button => {
+        button.addEventListener("click", () => {
+            const targetId = NAV_MAP[button.textContent.trim()];
 
-        showSection(map[button.textContent.trim()]);
+            if (targetId) {
+                showSection(targetId);
+            }
+        });
     });
-});
+
+    // Ensure the brand link and inline HTML handlers work.
+    $$("[onclick*='showSection']").forEach(element => {
+        element.addEventListener("click", event => {
+            const match = element.getAttribute("onclick")?.match(
+                /showSection\(['"]([^'"]+)['"]\)/
+            );
+
+            if (match) {
+                event.preventDefault();
+                showSection(match[1]);
+            }
+        });
+    });
+}
 
 
 /* =========================================================
-   MESSAGE FORMATTING AND RENDERING
+   CHAT MESSAGE RENDERING
    ========================================================= */
 
 function escapeHtml(value) {
@@ -173,46 +194,29 @@ function formatMessage(message) {
     );
 
     safe = safe.replace(
-        /^### (.*)$/gm,
-        "<strong>$1</strong>"
-    );
-
-    safe = safe.replace(
-        /^## (.*)$/gm,
-        "<strong>$1</strong>"
-    );
-
-    safe = safe.replace(
-        /^# (.*)$/gm,
+        /^#{1,3}\s+(.*)$/gm,
         "<strong>$1</strong>"
     );
 
     return safe.replace(/\n/g, "<br>");
 }
 
-function addMessage(message, type = "bot", options = {}) {
+function addMessage(message, type = "bot") {
     if (!chatBox) return;
 
     const isUser = type === "user";
+    const wrapper = document.createElement("div");
 
-    const messageDiv = document.createElement("div");
-
-    messageDiv.className = isUser
+    wrapper.className = isUser
         ? "message user-message"
         : "message bot-message";
 
-    if (options.temporary) {
-        messageDiv.dataset.temporary = "true";
-    }
-
     if (!isUser) {
         const avatar = document.createElement("div");
-
         avatar.className = "message-avatar";
         avatar.textContent = "N";
         avatar.setAttribute("aria-hidden", "true");
-
-        messageDiv.appendChild(avatar);
+        wrapper.appendChild(avatar);
     }
 
     const content = document.createElement("div");
@@ -226,9 +230,8 @@ function addMessage(message, type = "bot", options = {}) {
         content.innerHTML = formatMessage(message);
     }
 
-    messageDiv.appendChild(content);
-    chatBox.appendChild(messageDiv);
-
+    wrapper.appendChild(content);
+    chatBox.appendChild(wrapper);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
@@ -237,12 +240,11 @@ function renderConversation() {
 
     chatBox.replaceChildren();
 
-    if (chatHistory.length === 0) {
+    if (!chatHistory.length) {
         addMessage(
             "Hi! I'm NutriAI. 👋\n\nTell me about your nutrition goals or ask a food-related question. You can save your preferences in My Profile to personalize our conversation.",
             "bot"
         );
-
         return;
     }
 
@@ -259,19 +261,11 @@ function renderConversation() {
    CHAT HISTORY
    ========================================================= */
 
-function saveChatHistory() {
-    chatHistory = chatHistory.slice(-MAX_STORED_MESSAGES);
-
-    writeStorage(
-        STORAGE_KEYS.chat,
-        JSON.stringify(chatHistory)
-    );
-}
-
 function loadChatHistory() {
     try {
-        const raw = readStorage(STORAGE_KEYS.chat, "[]");
-        const parsed = JSON.parse(raw);
+        const parsed = JSON.parse(
+            readStorage(STORAGE_KEYS.chat, "[]")
+        );
 
         if (!Array.isArray(parsed)) {
             chatHistory = [];
@@ -281,22 +275,26 @@ function loadChatHistory() {
         chatHistory = parsed
             .filter(item =>
                 item &&
-                (item.role === "user" ||
-                 item.role === "assistant") &&
+                ["user", "assistant"].includes(item.role) &&
                 typeof item.content === "string"
             )
             .slice(-MAX_STORED_MESSAGES)
             .map(item => ({
                 role: item.role,
-                content: item.content.slice(
-                    0,
-                    MAX_MESSAGE_LENGTH
-                )
+                content: item.content.slice(0, MAX_MESSAGE_LENGTH)
             }));
-    } catch (error) {
-        // Supports a clean start if old stored history used HTML.
+    } catch {
         chatHistory = [];
     }
+}
+
+function saveChatHistory() {
+    chatHistory = chatHistory.slice(-MAX_STORED_MESSAGES);
+
+    writeStorage(
+        STORAGE_KEYS.chat,
+        JSON.stringify(chatHistory)
+    );
 }
 
 function clearChat() {
@@ -326,15 +324,13 @@ function showTyping() {
     if (!chatBox) return;
 
     const wrapper = document.createElement("div");
-    wrapper.className = "message bot-message";
     wrapper.id = "typingIndicator";
+    wrapper.className = "message bot-message";
     wrapper.setAttribute("role", "status");
-    wrapper.setAttribute("aria-live", "polite");
 
     const avatar = document.createElement("div");
     avatar.className = "message-avatar";
     avatar.textContent = "N";
-    avatar.setAttribute("aria-hidden", "true");
 
     const content = document.createElement("div");
     content.className = "message-content";
@@ -342,80 +338,59 @@ function showTyping() {
 
     wrapper.append(avatar, content);
     chatBox.appendChild(wrapper);
-
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function removeTyping() {
-    document.getElementById("typingIndicator")?.remove();
+    $("#typingIndicator")?.remove();
 }
 
 
 /* =========================================================
-   PROFILE: SAVE, LOAD AND VALIDATE
+   PROFILE
    ========================================================= */
 
 function setProfileStatus(message, isError = false) {
-    const status = document.getElementById("profileStatus");
-
+    const status = $("#profileStatus");
     if (!status) return;
 
     status.textContent = message;
-    status.style.color = isError ? "var(--danger)" : "";
+    status.style.color = isError ? "var(--danger, #c0392b)" : "";
 }
 
 function saveProfile() {
-    const getValue = id =>
+    const value = id =>
         document.getElementById(id)?.value.trim() || "";
 
     const profile = {
-        age: getValue("profileAge"),
-        weight: getValue("profileWeight"),
-        height: getValue("profileHeight"),
-        goal: getValue("profileGoal"),
-        diet: getValue("profileDiet"),
-        activity: getValue("profileActivity"),
-        allergies: getValue("profileAllergies"),
-        dislikes: getValue("profileDislikes")
+        age: value("profileAge"),
+        weight: value("profileWeight"),
+        height: value("profileHeight"),
+        activity: value("profileActivity"),
+        goal: value("profileGoal"),
+        diet: value("profileDiet"),
+        allergies: value("profileAllergies"),
+        dislikes: value("profileDislikes")
     };
 
-    if (profile.age) {
-        const age = Number(profile.age);
+    const checks = [
+        ["age", 1, 120, "Enter a valid age."],
+        ["weight", 0, 500, "Enter a valid weight in kilograms."],
+        ["height", 0, 300, "Enter a valid height in centimetres."]
+    ];
 
-        if (!Number.isFinite(age) || age < 1 || age > 120) {
-            setProfileStatus("Enter a valid age.", true);
-            return;
-        }
-    }
+    for (const [key, min, max, errorMessage] of checks) {
+        if (!profile[key]) continue;
 
-    if (profile.weight) {
-        const weight = Number(profile.weight);
-
-        if (
-            !Number.isFinite(weight) ||
-            weight <= 0 ||
-            weight > 500
-        ) {
-            setProfileStatus(
-                "Enter a valid weight in kilograms.",
-                true
-            );
-            return;
-        }
-    }
-
-    if (profile.height) {
-        const height = Number(profile.height);
+        const number = Number(profile[key]);
 
         if (
-            !Number.isFinite(height) ||
-            height <= 0 ||
-            height > 300
+            !Number.isFinite(number) ||
+            number < min ||
+            number > max ||
+            ((key === "weight" || key === "height") && number <= 0)
         ) {
-            setProfileStatus(
-                "Enter a valid height in centimetres.",
-                true
-            );
+            setProfileStatus(errorMessage, true);
             return;
         }
     }
@@ -440,19 +415,16 @@ function loadProfile() {
         profileAge: "age",
         profileWeight: "weight",
         profileHeight: "height",
+        profileActivity: "activity",
         profileGoal: "goal",
         profileDiet: "diet",
-        profileActivity: "activity",
         profileAllergies: "allergies",
         profileDislikes: "dislikes"
     };
 
-    Object.entries(fields).forEach(([elementId, key]) => {
-        const element = document.getElementById(elementId);
-
-        if (element) {
-            element.value = profile[key] || "";
-        }
+    Object.entries(fields).forEach(([id, key]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = profile[key] || "";
     });
 }
 
@@ -460,7 +432,7 @@ window.saveProfile = saveProfile;
 
 
 /* =========================================================
-   AI CHAT REQUEST
+   AI CHAT
    ========================================================= */
 
 async function sendMessage() {
@@ -474,45 +446,34 @@ async function sendMessage() {
     }
 
     if (message.length > MAX_MESSAGE_LENGTH) {
-        addMessage(
-            "Please keep your message under 4,000 characters.",
-            "bot"
-        );
+        addMessage("Please keep your message under 4,000 characters.", "bot");
         return;
     }
 
+    const previousHistory = [...chatHistory];
     const historyForRequest = chatHistory
         .slice(-MAX_CONTEXT_MESSAGES)
         .map(item => ({ ...item }));
 
-    const previousHistory = [...chatHistory];
-
-    chatHistory.push({
-        role: "user",
-        content: message
-    });
-
-    chatHistory = chatHistory.slice(-MAX_STORED_MESSAGES);
-
     addMessage(message, "user");
+
+    chatHistory.push({ role: "user", content: message });
     saveChatHistory();
 
     messageInput.value = "";
     isSending = true;
     sendButton.disabled = true;
     messageInput.disabled = true;
-    sendButton.textContent = "…";
+    sendButton.innerHTML = "…";
 
     showTyping();
 
     try {
         const response = await fetch("/chat", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                message: message,
+                message,
                 profile: getSavedProfile(),
                 history: historyForRequest
             })
@@ -530,8 +491,7 @@ async function sendMessage() {
 
         if (!response.ok) {
             throw new Error(
-                data?.error ||
-                "NutriAI could not process your request."
+                data?.error || "NutriAI could not process your request."
             );
         }
 
@@ -539,9 +499,7 @@ async function sendMessage() {
             typeof data.response !== "string" ||
             !data.response.trim()
         ) {
-            throw new Error(
-                "No answer was returned. Please try again."
-            );
+            throw new Error("No answer was returned. Please try again.");
         }
 
         const answer = data.response.trim();
@@ -551,26 +509,20 @@ async function sendMessage() {
             content: answer
         });
 
-        chatHistory = chatHistory.slice(-MAX_STORED_MESSAGES);
-
-        addMessage(answer, "bot");
         saveChatHistory();
+        addMessage(answer, "bot");
 
     } catch (error) {
         console.error("NutriAI request failed:", error);
 
-        // Remove the failed question from persistent history.
-        // Keep it visible so the user can still see what they asked.
         chatHistory = previousHistory;
         saveChatHistory();
 
-        const errorMessage =
-            error instanceof TypeError
-                ? "Unable to connect to NutriAI. Check your internet connection and try again."
-                : error.message ||
-                  "Something went wrong. Please try again.";
+        const messageText = error instanceof TypeError
+            ? "Unable to connect to NutriAI. Check your internet connection and try again."
+            : error.message || "Something went wrong. Please try again.";
 
-        addMessage(errorMessage, "bot");
+        addMessage(messageText, "bot");
 
     } finally {
         removeTyping();
@@ -578,8 +530,6 @@ async function sendMessage() {
         isSending = false;
         sendButton.disabled = false;
         messageInput.disabled = false;
-
-        // Restore the arrow icon used in the current HTML.
         sendButton.innerHTML = '<span aria-hidden="true">↑</span>';
 
         messageInput.focus();
@@ -590,14 +540,13 @@ window.sendMessage = sendMessage;
 
 
 /* =========================================================
-   QUICK PROMPTS AND MEAL PLANNER
+   QUICK PROMPTS AND PLANNER
    ========================================================= */
 
 function sendQuickMessage(message) {
     if (isSending || !messageInput) return;
 
     showSection("chatSection");
-
     messageInput.value = message;
     sendMessage();
 }
@@ -615,19 +564,15 @@ window.usePlannerPrompt = usePlannerPrompt;
    ========================================================= */
 
 function calculateBMI() {
-    const weight = Number(
-        document.getElementById("bmiWeight")?.value
-    );
-
-    const height = Number(
-        document.getElementById("bmiHeight")?.value
-    );
-
-    const result = document.getElementById("bmiResult");
+    const weight = Number($("#bmiWeight")?.value);
+    const height = Number($("#bmiHeight")?.value);
+    const result = $("#bmiResult");
 
     if (!result) return;
 
     if (
+        !$("#bmiWeight")?.value ||
+        !$("#bmiHeight")?.value ||
         !Number.isFinite(weight) ||
         !Number.isFinite(height) ||
         weight <= 0 ||
@@ -635,37 +580,21 @@ function calculateBMI() {
         height <= 0 ||
         height > 300
     ) {
-        result.textContent =
-            "Enter a valid weight in kg and height in cm.";
+        result.textContent = "Enter a valid weight in kg and height in cm.";
         return;
     }
 
-    const heightMeters = height / 100;
-    const bmi = weight / (heightMeters * heightMeters);
+    const bmi = weight / ((height / 100) ** 2);
 
     let category;
 
-    if (bmi < 18.5) {
-        category = "Underweight range";
-    } else if (bmi < 25) {
-        category = "Normal range";
-    } else if (bmi < 30) {
-        category = "Overweight range";
-    } else {
-        category = "Obesity range";
-    }
+    if (bmi < 18.5) category = "Underweight range";
+    else if (bmi < 25) category = "Normal range";
+    else if (bmi < 30) category = "Overweight range";
+    else category = "Obesity range";
 
-    result.replaceChildren();
-
-    const summary = document.createElement("p");
-    summary.textContent =
-        `Your BMI is ${bmi.toFixed(1)} — ${category}.`;
-
-    const note = document.createElement("small");
-    note.textContent =
-        "BMI is a screening measure, not a diagnosis. Adult ranges are not intended for children.";
-
-    result.append(summary, note);
+    result.textContent =
+        `Your BMI is ${bmi.toFixed(1)} — ${category}. Remember, BMI is a screening measure, not a diagnosis.`;
 }
 
 window.calculateBMI = calculateBMI;
@@ -676,23 +605,17 @@ window.calculateBMI = calculateBMI;
    ========================================================= */
 
 function calculateCalories() {
-    const age = Number(
-        document.getElementById("calorieAge")?.value
-    );
-
-    const weight = Number(
-        document.getElementById("calorieWeight")?.value
-    );
-
-    const height = Number(
-        document.getElementById("calorieHeight")?.value
-    );
-
-    const result = document.getElementById("calorieResult");
+    const age = Number($("#calorieAge")?.value);
+    const weight = Number($("#calorieWeight")?.value);
+    const height = Number($("#calorieHeight")?.value);
+    const result = $("#calorieResult");
 
     if (!result) return;
 
     if (
+        !$("#calorieAge")?.value ||
+        !$("#calorieWeight")?.value ||
+        !$("#calorieHeight")?.value ||
         !Number.isFinite(age) ||
         !Number.isFinite(weight) ||
         !Number.isFinite(height) ||
@@ -708,32 +631,21 @@ function calculateCalories() {
         return;
     }
 
-    // Simplified estimate, not a clinical calorie prescription.
+    // Simplified estimate for general awareness only.
     const estimatedBMR =
-        (10 * weight) +
-        (6.25 * height) -
-        (5 * age);
+        (10 * weight) + (6.25 * height) - (5 * age) - 161;
 
     const estimatedCalories = Math.round(estimatedBMR * 1.45);
 
-    result.replaceChildren();
-
-    const summary = document.createElement("p");
-    summary.textContent =
-        `Approximate estimate: ${estimatedCalories.toLocaleString()} kcal/day.`;
-
-    const note = document.createElement("small");
-    note.textContent =
-        "This simplified estimate does not account for all individual factors and is not medical advice.";
-
-    result.append(summary, note);
+    result.textContent =
+        `Approximate estimate: ${estimatedCalories.toLocaleString()} kcal/day. This simplified estimate is not medical advice.`;
 }
 
 window.calculateCalories = calculateCalories;
 
 
 /* =========================================================
-   DARK MODE
+   THEME
    ========================================================= */
 
 function applyTheme(theme) {
@@ -749,10 +661,9 @@ function applyTheme(theme) {
             isDark ? "Switch to light mode" : "Switch to dark mode"
         );
 
-        themeToggle.setAttribute(
-            "title",
-            isDark ? "Switch to light mode" : "Switch to dark mode"
-        );
+        themeToggle.title = isDark
+            ? "Switch to light mode"
+            : "Switch to dark mode";
     }
 }
 
@@ -773,7 +684,7 @@ themeToggle?.addEventListener("click", toggleTheme);
 
 
 /* =========================================================
-   CHAT FORM
+   EVENT HANDLERS
    ========================================================= */
 
 chatForm?.addEventListener("submit", event => {
@@ -788,18 +699,42 @@ messageInput?.addEventListener("keydown", event => {
         !event.isComposing
     ) {
         event.preventDefault();
-    
-
-
-
-
-window.addEventListener("error", function (event) {
-    alert("JavaScript error: " + event.message);
+        sendMessage();
+    }
 });
 
-window.addEventListener("load", function () {
-    alert(
-        "JS loaded. showSection: " +
-        typeof window.showSection
+
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
+
+function initializeNutriAI() {
+    initializeNavigation();
+    loadTheme();
+    loadProfile();
+    loadChatHistory();
+    renderConversation();
+
+    // Keep the app usable even if an optional section is missing.
+    const firstAvailableSection = SECTION_IDS.find(id =>
+        document.getElementById(id)
     );
-});
+
+    if (firstAvailableSection) {
+        showSection(
+            document.getElementById("chatSection")
+                ? "chatSection"
+                : firstAvailableSection
+        );
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener(
+        "DOMContentLoaded",
+        initializeNutriAI,
+        { once: true }
+    );
+} else {
+    initializeNutriAI();
+}
