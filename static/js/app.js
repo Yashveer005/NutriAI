@@ -1,1051 +1,697 @@
-// ============================================================
-// NutriAI - Frontend Application
-// ============================================================
 
+"use strict";
 
-// =========================
-// DOM ELEMENTS
-// =========================
+// ============================================================
+// NutriAI 2.0 — Frontend Application
+// ============================================================
 
 const chatBox = document.getElementById("chatBox");
 const messageInput = document.getElementById("messageInput");
 const sendButton = document.getElementById("sendButton");
+const themeToggle = document.getElementById("themeToggle");
+const navButtons = document.querySelectorAll(".nav-btn");
 
-const themeToggle =
-    document.getElementById("themeToggle");
+const STORAGE_KEYS = {
+    profile: "nutriAIProfile",
+    theme: "nutriAITheme",
+    chat: "nutriAIChat"
+};
 
-const navButtons =
-    document.querySelectorAll(".nav-btn");
+const MAX_STORED_MESSAGES = 50;
+const MAX_CONTEXT_MESSAGES = 8;
 
+let chatHistory = [];
+let isSending = false;
 
 const sections = {
-
-    chat:
-        document.getElementById("chatSection"),
-
-    planner:
-        document.getElementById("plannerSection"),
-
-    calculator:
-        document.getElementById("calculatorSection"),
-
-    profile:
-        document.getElementById("profileSection"),
-
-    about:
-        document.getElementById("aboutSection")
-
+    chat: document.getElementById("chatSection"),
+    planner: document.getElementById("plannerSection"),
+    calculator: document.getElementById("calculatorSection"),
+    profile: document.getElementById("profileSection"),
+    about: document.getElementById("aboutSection")
 };
 
 
-// =========================
+// ============================================================
+// STORAGE HELPERS
+// ============================================================
+
+function readStorage(key, fallback = null) {
+    try {
+        const value = localStorage.getItem(key);
+        return value === null ? fallback : value;
+    } catch (error) {
+        console.warn("Local storage is unavailable.");
+        return fallback;
+    }
+}
+
+function writeStorage(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (error) {
+        console.warn("Could not save local data.");
+        return false;
+    }
+}
+
+function removeStorage(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        console.warn("Could not remove local data.");
+    }
+}
+
+function getSavedProfile() {
+    try {
+        const raw = readStorage(STORAGE_KEYS.profile, "{}");
+        const profile = JSON.parse(raw);
+
+        return profile && typeof profile === "object" &&
+            !Array.isArray(profile) ? profile : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveChatHistory() {
+    const saved = chatHistory.slice(-MAX_STORED_MESSAGES);
+
+    if (!writeStorage(STORAGE_KEYS.chat, JSON.stringify(saved))) {
+        console.warn("Chat history could not be saved on this device.");
+    }
+}
+
+function loadChatHistory() {
+    try {
+        const raw = readStorage(STORAGE_KEYS.chat, "[]");
+        const parsed = JSON.parse(raw);
+
+        if (!Array.isArray(parsed)) {
+            chatHistory = [];
+            return;
+        }
+
+        chatHistory = parsed
+            .filter(item =>
+                item &&
+                (item.role === "user" || item.role === "assistant") &&
+                typeof item.content === "string"
+            )
+            .slice(-MAX_STORED_MESSAGES)
+            .map(item => ({
+                role: item.role,
+                content: item.content.slice(0, 4000)
+            }));
+
+    } catch {
+        chatHistory = [];
+    }
+}
+
+
+// ============================================================
 // NAVIGATION
-// =========================
+// ============================================================
 
 navButtons.forEach(button => {
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            const sectionName =
-                button.dataset.section;
-
-            showSection(sectionName);
-
-        }
-    );
-
+    button.addEventListener("click", () => {
+        showSection(button.dataset.section);
+    });
 });
 
-
 function showSection(sectionName) {
+    if (!sections[sectionName]) return;
 
     navButtons.forEach(button => {
+        const isActive = button.dataset.section === sectionName;
 
-        button.classList.toggle(
-            "active",
-            button.dataset.section === sectionName
-        );
-
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-current", isActive ? "page" : "false");
     });
 
-
-    Object.entries(sections).forEach(
-        ([name, section]) => {
-
-            if (!section) {
-                return;
-            }
-
-            section.classList.toggle(
-                "active",
-                name === sectionName
-            );
-
+    Object.entries(sections).forEach(([name, section]) => {
+        if (section) {
+            section.classList.toggle("active", name === sectionName);
         }
-    );
-
+    });
 
     window.scrollTo({
         top: 0,
-        behavior: "smooth"
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth"
     });
-
 }
 
 
-// =========================
-// HTML SECURITY
-// =========================
+// ============================================================
+// SAFE MESSAGE RENDERING
+// ============================================================
 
-function escapeHtml(text) {
-
-    const div =
-        document.createElement("div");
-
-    div.textContent = text;
-
-    return div.innerHTML;
-
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
 }
-
-
-// =========================
-// AI RESPONSE FORMAT
-// =========================
 
 function formatMessage(message) {
+    // Escape user/model text before adding a small set of safe
+    // formatting tags. Do not render arbitrary HTML from the model.
+    let safe = escapeHtml(message);
 
-    let safeMessage =
-        escapeHtml(message);
+    safe = safe.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    safe = safe.replace(/^### (.*)$/gm, "<strong>$1</strong>");
+    safe = safe.replace(/^## (.*)$/gm, "<strong>$1</strong>");
+    safe = safe.replace(/^# (.*)$/gm, "<strong>$1</strong>");
 
-
-    safeMessage =
-        safeMessage.replace(
-            /\*\*(.*?)\*\*/g,
-            "<strong>$1</strong>"
-        );
-
-
-    safeMessage =
-        safeMessage.replace(
-            /^### (.*)$/gm,
-            "<strong>$1</strong>"
-        );
-
-
-    safeMessage =
-        safeMessage.replace(
-            /^## (.*)$/gm,
-            "<strong>$1</strong>"
-        );
-
-
-    safeMessage =
-        safeMessage.replace(
-            /^# (.*)$/gm,
-            "<strong>$1</strong>"
-        );
-
-
-    safeMessage =
-        safeMessage.replace(
-            /^[-•] (.*)$/gm,
-            "• $1"
-        );
-
-
-    safeMessage =
-        safeMessage.replace(
-            /\n/g,
-            "<br>"
-        );
-
-
-    return safeMessage;
-
+    return safe.replace(/\n/g, "<br>");
 }
 
+function addMessage(message, type = "bot", options = {}) {
+    if (!chatBox) return;
 
-// =========================
-// ADD CHAT MESSAGE
-// =========================
-
-function addMessage(
-    message,
-    type = "bot"
-) {
-
-    const messageDiv =
-        document.createElement("div");
-
-
-    messageDiv.className =
-        `message ${type}`;
-
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `message ${type}`;
 
     if (type === "bot") {
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = "🥗";
+        avatar.setAttribute("aria-hidden", "true");
 
-        messageDiv.innerHTML = `
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
 
-            <div class="avatar">
-                🥗
-            </div>
+        const name = document.createElement("strong");
+        name.textContent = "NutriAI";
 
-            <div class="bubble">
+        const content = document.createElement("p");
+        content.innerHTML = formatMessage(message);
 
-                <strong>
-                    NutriAI
-                </strong>
-
-                <p>
-                    ${formatMessage(message)}
-                </p>
-
-            </div>
-
-        `;
-
+        bubble.append(name, content);
+        messageDiv.append(avatar, bubble);
     } else {
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
 
-        messageDiv.innerHTML = `
+        const content = document.createElement("p");
+        content.textContent = message;
 
-            <div class="bubble">
-
-                <p>
-                    ${escapeHtml(message)}
-                </p>
-
-            </div>
-
-        `;
-
+        bubble.appendChild(content);
+        messageDiv.appendChild(bubble);
     }
 
+    if (options.temporary) {
+        messageDiv.dataset.temporary = "true";
+    }
 
-    chatBox.appendChild(
-        messageDiv
-    );
+    chatBox.appendChild(messageDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 
+function renderConversation() {
+    if (!chatBox) return;
 
-    chatBox.scrollTop =
-        chatBox.scrollHeight;
+    chatBox.replaceChildren();
 
+    if (chatHistory.length === 0) {
+        addMessage(
+            "Hello! I'm NutriAI, your personal nutrition assistant.\n\nTell me your goal or ask a nutrition question to get started.",
+            "bot"
+        );
+        return;
+    }
+
+    chatHistory.forEach(item => {
+        addMessage(
+            item.content,
+            item.role === "user" ? "user" : "bot"
+        );
+    });
 }
 
 
-// =========================
-// TYPING
-// =========================
+// ============================================================
+// TYPING INDICATOR
+// ============================================================
 
 function showTyping() {
-
     removeTyping();
 
+    if (!chatBox) return;
 
-    const typingDiv =
-        document.createElement("div");
+    const typingDiv = document.createElement("div");
+    typingDiv.className = "message bot";
+    typingDiv.id = "typingIndicator";
+    typingDiv.setAttribute("role", "status");
+    typingDiv.setAttribute("aria-live", "polite");
 
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = "🥗";
 
-    typingDiv.className =
-        "message bot";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
 
+    const name = document.createElement("strong");
+    name.textContent = "NutriAI";
 
-    typingDiv.id =
-        "typingIndicator";
+    const text = document.createElement("p");
+    text.textContent = "Preparing your response…";
 
+    bubble.append(name, text);
+    typingDiv.append(avatar, bubble);
+    chatBox.appendChild(typingDiv);
 
-    typingDiv.innerHTML = `
-
-        <div class="avatar">
-            🥗
-        </div>
-
-        <div class="bubble">
-
-            <strong>
-                NutriAI
-            </strong>
-
-            <p>
-                Thinking... 🤔
-            </p>
-
-        </div>
-
-    `;
-
-
-    chatBox.appendChild(
-        typingDiv
-    );
-
-
-    chatBox.scrollTop =
-        chatBox.scrollHeight;
-
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
-
 
 function removeTyping() {
-
-    const typingIndicator =
-        document.getElementById(
-            "typingIndicator"
-        );
-
-
-    if (typingIndicator) {
-
-        typingIndicator.remove();
-
-    }
-
+    document.getElementById("typingIndicator")?.remove();
 }
 
 
-// =========================
+// ============================================================
 // PROFILE
-// =========================
-
-function getSavedProfile() {
-
-    const savedProfile =
-        localStorage.getItem(
-            "nutriAIProfile"
-        );
-
-
-    if (!savedProfile) {
-
-        return {};
-
-    }
-
-
-    try {
-
-        return JSON.parse(
-            savedProfile
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Profile read error:",
-            error
-        );
-
-        return {};
-
-    }
-
-}
-
-
-// =========================
-// SAVE PROFILE
-// =========================
+// ============================================================
 
 function saveProfile() {
+    const getValue = id =>
+        document.getElementById(id)?.value.trim() || "";
 
     const profile = {
-
-        age:
-            document.getElementById(
-                "profileAge"
-            ).value.trim(),
-
-        weight:
-            document.getElementById(
-                "profileWeight"
-            ).value.trim(),
-
-        height:
-            document.getElementById(
-                "profileHeight"
-            ).value.trim(),
-
-        goal:
-            document.getElementById(
-                "goal"
-            ).value,
-
-        diet:
-            document.getElementById(
-                "diet"
-            ).value,
-
-        activity:
-            document.getElementById(
-                "activity"
-            ).value
-
+        age: getValue("profileAge"),
+        weight: getValue("profileWeight"),
+        height: getValue("profileHeight"),
+        goal: getValue("goal"),
+        diet: getValue("diet"),
+        activity: getValue("activity"),
+        allergies: getValue("profileAllergies"),
+        dislikes: getValue("profileDislikes")
     };
 
+    const age = Number(profile.age);
+    const weight = Number(profile.weight);
+    const height = Number(profile.height);
 
-    localStorage.setItem(
-        "nutriAIProfile",
+    if (profile.age && (!Number.isFinite(age) || age < 1 || age > 120)) {
+        setProfileStatus("Please enter a valid age.", true);
+        return;
+    }
+
+    if (profile.weight &&
+        (!Number.isFinite(weight) || weight <= 0 || weight > 500)) {
+        setProfileStatus("Please enter a valid weight in kg.", true);
+        return;
+    }
+
+    if (profile.height &&
+        (!Number.isFinite(height) || height <= 0 || height > 300)) {
+        setProfileStatus("Please enter a valid height in cm.", true);
+        return;
+    }
+
+    const saved = writeStorage(
+        STORAGE_KEYS.profile,
         JSON.stringify(profile)
     );
 
-
-    const status =
-        document.getElementById(
-            "profileStatus"
-        );
-
-
-    status.textContent =
-        "✓ Profile saved successfully on this device.";
-
-
-    console.log(
-        "NutriAI Profile Saved:",
-        profile
+    setProfileStatus(
+        saved
+            ? "Profile saved on this device."
+            : "Could not save the profile. Check your browser storage settings.",
+        !saved
     );
-
 }
 
+function setProfileStatus(message, isError = false) {
+    const status = document.getElementById("profileStatus");
+    if (!status) return;
 
-// =========================
-// LOAD PROFILE
-// =========================
+    status.textContent = message;
+    status.style.color = isError ? "#c0392b" : "";
+}
 
 function loadProfile() {
+    const profile = getSavedProfile();
 
-    const profile =
-        getSavedProfile();
+    const fields = {
+        profileAge: "age",
+        profileWeight: "weight",
+        profileHeight: "height",
+        goal: "goal",
+        diet: "diet",
+        activity: "activity",
+        profileAllergies: "allergies",
+        profileDislikes: "dislikes"
+    };
 
+    Object.entries(fields).forEach(([elementId, key]) => {
+        const element = document.getElementById(elementId);
 
-    if (!profile) {
-        return;
-    }
-
-
-    const age =
-        document.getElementById(
-            "profileAge"
-        );
-
-    const weight =
-        document.getElementById(
-            "profileWeight"
-        );
-
-    const height =
-        document.getElementById(
-            "profileHeight"
-        );
-
-    const goal =
-        document.getElementById(
-            "goal"
-        );
-
-    const diet =
-        document.getElementById(
-            "diet"
-        );
-
-    const activity =
-        document.getElementById(
-            "activity"
-        );
-
-
-    if (age) {
-        age.value =
-            profile.age || "";
-    }
-
-
-    if (weight) {
-        weight.value =
-            profile.weight || "";
-    }
-
-
-    if (height) {
-        height.value =
-            profile.height || "";
-    }
-
-
-    if (goal) {
-        goal.value =
-            profile.goal || "";
-    }
-
-
-    if (diet) {
-        diet.value =
-            profile.diet || "";
-    }
-
-
-    if (activity) {
-        activity.value =
-            profile.activity || "";
-    }
-
+        if (element) {
+            element.value = profile[key] || "";
+        }
+    });
 }
 
 
-// =========================
-// SEND MESSAGE
-// =========================
+// ============================================================
+// CHAT REQUEST
+// ============================================================
 
 async function sendMessage() {
+    if (isSending || !messageInput || !sendButton) return;
 
-    const message =
-        messageInput.value.trim();
-
+    const message = messageInput.value.trim();
 
     if (!message) {
+        messageInput.focus();
         return;
     }
 
+    if (message.length > 4000) {
+        addMessage(
+            "Please keep your message under 4,000 characters.",
+            "bot"
+        );
+        return;
+    }
 
-    addMessage(
-        message,
-        "user"
-    );
+    // Send prior messages as context, without duplicating the
+    // current message in the history supplied to the backend.
+    const historyForRequest = chatHistory
+        .slice(-MAX_CONTEXT_MESSAGES)
+        .map(item => ({ ...item }));
 
+    chatHistory.push({
+        role: "user",
+        content: message
+    });
 
-    messageInput.value =
-        "";
+    chatHistory = chatHistory.slice(-MAX_STORED_MESSAGES);
+    addMessage(message, "user");
+    saveChatHistory();
 
-
-    sendButton.disabled =
-        true;
-
-
-    sendButton.textContent =
-        "Thinking...";
-
+    messageInput.value = "";
+    isSending = true;
+    sendButton.disabled = true;
+    sendButton.textContent = "Thinking…";
+    messageInput.disabled = true;
 
     showTyping();
 
-
     try {
+        const response = await fetch("/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                message,
+                profile: getSavedProfile(),
+                history: historyForRequest
+            })
+        });
 
-        const profile =
-            getSavedProfile();
+        let data;
 
-
-        const response =
-            await fetch(
-                "/chat",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-
-                        message:
-                            message,
-
-                        profile: JSON.parse(localStorage.getItem("nutriAIProfile") || "{}")
-
-                    })
-
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        removeTyping();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Something went wrong."
-            );
-
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error("The server returned an invalid response.");
         }
 
+        if (!response.ok) {
+            throw new Error(
+                data.error || "NutriAI couldn't process the request."
+            );
+        }
 
-        addMessage(
-            data.response ||
-            "I couldn't generate a response.",
-            "bot"
-        );
+        if (typeof data.response !== "string" || !data.response.trim()) {
+            throw new Error("No answer was returned. Please try again.");
+        }
 
+        const answer = data.response.trim();
 
+        chatHistory.push({
+            role: "assistant",
+            content: answer
+        });
+
+        chatHistory = chatHistory.slice(-MAX_STORED_MESSAGES);
+        addMessage(answer, "bot");
         saveChatHistory();
 
-
     } catch (error) {
+        console.error("NutriAI request failed:", error);
 
-        removeTyping();
+        const messageForUser =
+            error instanceof TypeError
+                ? "Unable to connect to NutriAI. Check your connection and try again."
+                : error.message || "Something went wrong. Please try again.";
 
-
-        console.error(
-            "NutriAI Error:",
-            error
-        );
-
-
-        addMessage(
-            "Sorry, I couldn't process your request right now. Please try again.",
-            "bot"
-        );
+        // Do not save a temporary network/API error as an AI answer.
+        addMessage(messageForUser, "bot");
 
     } finally {
+        removeTyping();
 
-        sendButton.disabled =
-            false;
-
-
-        sendButton.textContent =
-            "Send ➤";
-
-
+        isSending = false;
+        sendButton.disabled = false;
+        sendButton.textContent = "Send ➤";
+        messageInput.disabled = false;
         messageInput.focus();
-
     }
-
 }
 
 
-// =========================
-// QUICK PROMPTS
-// =========================
+// ============================================================
+// QUICK PROMPTS AND DIET PLANNER
+// ============================================================
 
 function sendQuickMessage(message) {
-
     showSection("chat");
 
-    messageInput.value =
-        message;
+    if (!messageInput) return;
 
+    messageInput.value = message;
     sendMessage();
-
 }
-
-
-// =========================
-// DIET PLANNER
-// =========================
 
 function usePlannerPrompt(prompt) {
-
-    showSection("chat");
-
-    messageInput.value =
-        prompt;
-
-    sendMessage();
-
+    sendQuickMessage(prompt);
 }
 
 
-// =========================
-// BMI
-// =========================
+// ============================================================
+// BMI CALCULATOR
+// ============================================================
 
 function calculateBMI() {
+    const weight = Number(
+        document.getElementById("bmiWeight")?.value
+    );
 
-    const weight =
-        parseFloat(
-            document.getElementById(
-                "bmiWeight"
-            ).value
-        );
+    const height = Number(
+        document.getElementById("bmiHeight")?.value
+    );
 
-
-    const height =
-        parseFloat(
-            document.getElementById(
-                "bmiHeight"
-            ).value
-        );
-
-
-    const result =
-        document.getElementById(
-            "bmiResult"
-        );
-
+    const result = document.getElementById("bmiResult");
+    if (!result) return;
 
     if (
-        !weight ||
-        !height ||
+        !Number.isFinite(weight) ||
+        !Number.isFinite(height) ||
         weight <= 0 ||
-        height <= 0
+        weight > 500 ||
+        height <= 0 ||
+        height > 300
     ) {
-
-        result.textContent =
-            "Please enter a valid weight and height.";
-
+        result.textContent = "Enter a valid weight and height.";
         return;
-
     }
 
-
-    const heightMeters =
-        height / 100;
-
-
-    const bmi =
-        weight /
-        (heightMeters * heightMeters);
-
+    const heightMeters = height / 100;
+    const bmi = weight / (heightMeters * heightMeters);
 
     let category;
 
-
     if (bmi < 18.5) {
-
-        category =
-            "Underweight";
-
+        category = "Underweight range";
     } else if (bmi < 25) {
-
-        category =
-            "Normal range";
-
+        category = "Normal range";
     } else if (bmi < 30) {
-
-        category =
-            "Overweight";
-
+        category = "Overweight range";
     } else {
-
-        category =
-            "Obesity range";
-
+        category = "Obesity range";
     }
 
+    result.replaceChildren();
 
-    result.innerHTML = `
+    const summary = document.createElement("p");
+    summary.textContent = `Your BMI is ${bmi.toFixed(1)} — ${category}.`;
 
-        Your BMI is
-        <strong>
-            ${bmi.toFixed(1)}
-        </strong>
+    const note = document.createElement("small");
+    note.textContent =
+        "BMI is a general screening measure, not a diagnosis.";
 
-        — ${category}.
-
-        <br>
-
-        <small>
-            BMI is a general screening measure,
-            not a diagnosis.
-        </small>
-
-    `;
-
+    result.append(summary, note);
 }
 
 
-// =========================
-// CALORIE ESTIMATE
-// =========================
+// ============================================================
+// DAILY CALORIE ESTIMATE
+// ============================================================
 
 function calculateCalories() {
+    const age = Number(
+        document.getElementById("calorieAge")?.value
+    );
 
-    const age =
-        parseFloat(
-            document.getElementById(
-                "calorieAge"
-            ).value
-        );
+    const weight = Number(
+        document.getElementById("calorieWeight")?.value
+    );
 
+    const height = Number(
+        document.getElementById("calorieHeight")?.value
+    );
 
-    const weight =
-        parseFloat(
-            document.getElementById(
-                "calorieWeight"
-            ).value
-        );
-
-
-    const height =
-        parseFloat(
-            document.getElementById(
-                "calorieHeight"
-            ).value
-        );
-
-
-    const result =
-        document.getElementById(
-            "calorieResult"
-        );
-
+    const result = document.getElementById("calorieResult");
+    if (!result) return;
 
     if (
-        !age ||
-        !weight ||
-        !height ||
-        age <= 0 ||
+        !Number.isFinite(age) ||
+        !Number.isFinite(weight) ||
+        !Number.isFinite(height) ||
+        age < 18 ||
+        age > 100 ||
         weight <= 0 ||
-        height <= 0
+        weight > 500 ||
+        height <= 0 ||
+        height > 300
     ) {
-
         result.textContent =
-            "Please enter valid age, weight and height.";
-
+            "For this estimate, enter an age from 18–100, a valid weight and a valid height.";
         return;
-
     }
 
+    // This is a rough estimate using a simplified formula.
+    // It is not an individualized clinical calorie prescription.
+    const estimatedBMR =
+        (10 * weight) + (6.25 * height) - (5 * age);
 
-    const bmr =
-        (10 * weight) +
-        (6.25 * height) -
-        (5 * age);
+    const estimatedCalories = estimatedBMR * 1.45;
 
+    result.replaceChildren();
 
-    const estimatedCalories =
-        bmr * 1.45;
+    const summary = document.createElement("p");
+    summary.textContent =
+        `Approximate daily energy estimate: ${Math.round(estimatedCalories)} kcal/day.`;
 
+    const note = document.createElement("small");
+    note.textContent =
+        "This simplified estimate does not account for all individual factors. It is not a medical recommendation.";
 
-    result.innerHTML = `
-
-        Estimated daily calories:
-
-        <strong>
-            ${Math.round(
-                estimatedCalories
-            )} kcal/day
-        </strong>
-
-        <br>
-
-        <small>
-            General estimate based on
-            the information provided.
-        </small>
-
-    `;
-
+    result.append(summary, note);
 }
 
 
-// =========================
+// ============================================================
 // DARK MODE
-// =========================
+// ============================================================
 
 function loadTheme() {
+    const savedTheme = readStorage(STORAGE_KEYS.theme, "light");
+    const isDark = savedTheme === "dark";
 
-    const savedTheme =
-        localStorage.getItem(
-            "nutriAITheme"
-        );
-
-
-    if (
-        savedTheme === "dark"
-    ) {
-
-        document.body.classList.add(
-            "dark-mode"
-        );
-
-
-        if (themeToggle) {
-
-            themeToggle.textContent =
-                "☀️";
-
-        }
-
-    } else {
-
-        document.body.classList.remove(
-            "dark-mode"
-        );
-
-
-        if (themeToggle) {
-
-            themeToggle.textContent =
-                "🌙";
-
-        }
-
-    }
-
-}
-
-
-function toggleTheme() {
-
-    document.body.classList.toggle(
-        "dark-mode"
-    );
-
-
-    const isDark =
-        document.body.classList.contains(
-            "dark-mode"
-        );
-
-
-    localStorage.setItem(
-        "nutriAITheme",
-        isDark
-            ? "dark"
-            : "light"
-    );
-
+    document.body.classList.toggle("dark-mode", isDark);
 
     if (themeToggle) {
-
-        themeToggle.textContent =
-            isDark
-                ? "☀️"
-                : "🌙";
-
-    }
-
-}
-
-
-if (themeToggle) {
-
-    themeToggle.addEventListener(
-        "click",
-        toggleTheme
-    );
-
-}
-
-
-// =========================
-// CHAT HISTORY
-// =========================
-
-function saveChatHistory() {
-
-    localStorage.setItem(
-        "nutriAIChat",
-        chatBox.innerHTML
-    );
-
-}
-
-
-function loadChatHistory() {
-
-    const savedChat =
-        localStorage.getItem(
-            "nutriAIChat"
+        themeToggle.textContent = isDark ? "☀️" : "🌙";
+        themeToggle.setAttribute(
+            "aria-label",
+            isDark ? "Switch to light mode" : "Switch to dark mode"
         );
+    }
+}
+
+function toggleTheme() {
+    const isDark = document.body.classList.toggle("dark-mode");
+
+    writeStorage(
+        STORAGE_KEYS.theme,
+        isDark ? "dark" : "light"
+    );
+
+    if (themeToggle) {
+        themeToggle.textContent = isDark ? "☀️" : "🌙";
+        themeToggle.setAttribute(
+            "aria-label",
+            isDark ? "Switch to light mode" : "Switch to dark mode"
+        );
+    }
+}
+
+themeToggle?.addEventListener("click", toggleTheme);
 
 
-    if (!savedChat) {
+// ============================================================
+// CLEAR CHAT
+// ============================================================
+
+function clearChat() {
+    if (isSending) {
+        addMessage(
+            "Please wait for the current response before clearing the chat.",
+            "bot"
+        );
         return;
     }
 
-
-    chatBox.innerHTML =
-        savedChat;
-
+    chatHistory = [];
+    removeStorage(STORAGE_KEYS.chat);
+    renderConversation();
 }
 
-
-// =========================
-// CLEAR CHAT
-// =========================
-
-function clearChat() {
-
-    localStorage.removeItem(
-        "nutriAIChat"
-    );
+window.clearChat = clearChat;
 
 
-    chatBox.innerHTML = `
-
-        <div class="message bot">
-
-            <div class="avatar">
-                🥗
-            </div>
-
-            <div class="bubble">
-
-                <strong>
-                    NutriAI
-                </strong>
-
-                <p>
-                    Chat cleared successfully. 👋
-                </p>
-
-                <p>
-                    How can I help you today?
-                </p>
-
-            </div>
-
-        </div>
-
-    `;
-
-}
-
-
-// =========================
+// ============================================================
 // ENTER KEY
-// =========================
+// ============================================================
 
-if (messageInput) {
-
-    messageInput.addEventListener(
-        "keydown",
-        function(event) {
-
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey
-            ) {
-
-                event.preventDefault();
-
-                sendMessage();
-
-            }
-
-        }
-    );
-
-}
-
-
-// =========================
-// INITIALIZATION
-// =========================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-
-        loadProfile();
-
-        loadTheme();
-
-        loadChatHistory();
-
-        if (messageInput) {
-
-            messageInput.focus();
-
-        }
-
+messageInput?.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
     }
-);
+});
+
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadProfile();
+    loadTheme();
+    loadChatHistory();
+    renderConversation();
+});
+
+
+// Make functions available to the existing inline HTML handlers.
+window.sendMessage = sendMessage;
+window.sendQuickMessage = sendQuickMessage;
+window.usePlannerPrompt = usePlannerPrompt;
+window.saveProfile = saveProfile;
+window.calculateBMI = calculateBMI;
+window.calculateCalories = calculateCalories;
